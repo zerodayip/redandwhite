@@ -16,7 +16,7 @@ import java.net.URI
 import java.util.ArrayList
 
 class KuronimeProvider : MainAPI() {
-    override var mainUrl = "https://tv1.kuronime.vip"
+    override var mainUrl = "https://kuronime.vip"
     private var animekuUrl = "https://animeku.org"
     override var name = "Kuronime"
     override val hasQuickSearch = true
@@ -182,7 +182,7 @@ class KuronimeProvider : MainAPI() {
             ?.substringAfter("\"")?.substringBefore("\";")
             ?: throw ErrorLoadingException("No id found")
         val servers = app.post(
-            "$animekuUrl/afi.php", data = mapOf(
+            "$animekuUrl/v3.1.php", data = mapOf(
                 "id" to id
             ), referer = "$mainUrl/"
         ).parsedSafe<Servers>()
