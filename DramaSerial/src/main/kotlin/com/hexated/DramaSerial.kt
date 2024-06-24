@@ -12,7 +12,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 class DramaSerial : MainAPI() {
-    override var mainUrl = "https://tv3.dramaserial.id"
+    override var mainUrl = "https://tv11.juragan.film"
     private var serverUrl = "https://juraganfilm.info"
     override var name = "DramaSerial"
     override val hasMainPage = true
@@ -21,13 +21,12 @@ class DramaSerial : MainAPI() {
     override val supportedTypes = setOf(TvType.AsianDrama)
 
     override val mainPage = mainPageOf(
-        "$mainUrl/page/" to "Latest Movie",
-        "$mainUrl/Genre/ongoing/page/" to "Ongoing",
-        "$mainUrl/Genre/drama-serial-korea/page/" to "Drama Serial Korea",
-        "$mainUrl/Genre/drama-serial-jepang/page/" to "Drama Serial Jepang",
-        "$mainUrl/Genre/drama-serial-mandarin/page/" to "Drama Serial Mandarin",
-        "$mainUrl/Genre/drama-serial-filipina/page/" to "Drama Serial Filipina",
-        "$mainUrl/Genre/drama-serial-india/page/" to "Drama Serial India",
+        "$mainUrl/page/" to "Latest",
+        "$mainUrl/negara/korea/page/" to "Korea",
+        "$mainUrl/negara/japan/page/" to "Jepang",
+        "$mainUrl/negara/china/page/" to "Mandarin",
+        "$mainUrl/negara/thailand/page/" to "Thailand",
+        "$mainUrl/negara/india/page/" to "India",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -39,7 +38,7 @@ class DramaSerial : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        val href = fixUrl(this.selectFirst("a")!!.attr("href"))
+        val href = fixUrlNull(this.selectFirst("a")?.attr("href")) ?: return null
         val title = this.selectFirst("h2.entry-title a")?.text()?.trim() ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
         val episode =
@@ -63,22 +62,17 @@ class DramaSerial : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.selectFirst("h1.entry-title")!!.text().trim()
+        val title = document.selectFirst("h3.entry-title")?.text()?.trim() ?: ""
         val poster = fixUrlNull(document.selectFirst("figure.pull-left img")?.attr("src"))
         val tags =
-            document.select("div.gmr-movie-innermeta span:contains(Genre:) a").map { it.text() }
+            document.select("div.gmr-movie-innermeta a[rel=category tag]").map { it.text() }
         val year =
-            document.selectFirst("div.gmr-movie-innermeta span:contains(Year:) a")!!.text().trim()
-                .toIntOrNull()
+            document.selectFirst("span[itemprop=dateCreated]")?.attr("content")?.substringBefore("-")?.toIntOrNull()
         val duration =
             document.selectFirst("div.gmr-movie-innermeta span:contains(Duration:)")?.text()
                 ?.filter { it.isDigit() }?.toIntOrNull()
-        val description =
-            document.select("div.entry-content.entry-content-single div.entry-content.entry-content-single")
-                .text().trim()
-        val type = if (document.select("div.page-links")
-                .isNullOrEmpty()
-        ) TvType.Movie else TvType.AsianDrama
+        val description = document.select("div[itemprop=description]").text().trim()
+        val type = if (document.select("div.page-links").isNullOrEmpty()) TvType.Movie else TvType.AsianDrama
 
         if (type == TvType.Movie) {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {

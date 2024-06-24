@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.JWPlayer
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -13,7 +14,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class OtakudesuProvider : MainAPI() {
-    override var mainUrl = "https://otakudesu.wiki"
+    override var mainUrl = "https://otakudesu.cloud"
     override var name = "Otakudesu"
     override val hasMainPage = true
     override var lang = "id"
@@ -286,4 +287,9 @@ class DesuBeta : JWPlayer() {
 class Desudesuhd : JWPlayer() {
     override val name = "Desudesuhd"
     override val mainUrl = "https://desustream.me/desudesuhd/"
+}
+
+class Odvidhide : Filesim() {
+    override val name = "Odvidhide"
+    override var mainUrl = "https://odvidhide.com"
 }

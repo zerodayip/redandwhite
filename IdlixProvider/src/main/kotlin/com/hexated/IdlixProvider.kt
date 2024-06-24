@@ -5,19 +5,20 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.extractors.helper.AesHelper
-import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
 import java.net.URI
 
 class IdlixProvider : MainAPI() {
-    override var mainUrl = "https://tv.idlixofficial.co"
+    private val apiUrl = "https://vip.idlixplus.co"
+    override val instantLinkLoading = true
     private var directUrl = mainUrl
     override var name = "Idlix"
     override val hasMainPage = true
     override var lang = "id"
-    override val hasDownloadSupport = true
-    private val cloudflareKiller by lazy { CloudflareKiller() }
+    //    override var sequentialMainPage = true
+//    override var sequentialMainPageDelay = 1000L
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
@@ -26,14 +27,14 @@ class IdlixProvider : MainAPI() {
     )
 
     override val mainPage = mainPageOf(
-        "$mainUrl/" to "Featured",
-        "$mainUrl/trending/page/?get=movies" to "Trending Movies",
-        "$mainUrl/trending/page/?get=tv" to "Trending TV Series",
-        "$mainUrl/movie/page/" to "Movie Terbaru",
-        "$mainUrl/tvseries/page/" to "TV Series Terbaru",
-//        "$mainUrl/network/netflix/page/" to "Netflix",
-//        "$mainUrl/genre/anime/page/" to "Anime",
-//        "$mainUrl/genre/drama-korea/page/" to "Drama Korea",
+        "" to "Recommend",
+        "trending/page/?get=movies" to "Trending Movies",
+        "trending/page/?get=tv" to "Trending TV Series",
+        "movie/page/" to "New Movie",
+        "tvseries/page/" to "New TV Series",
+        "network/netflix/page/" to "Netflix",
+        "genre/anime/page/" to "Anime",
+        "genre/drama-korea/page/" to "Drama Korea",
     )
 
     private fun getBaseUrl(url: String): String {
@@ -47,11 +48,11 @@ class IdlixProvider : MainAPI() {
         request: MainPageRequest
     ): HomePageResponse {
         val url = request.data.split("?")
-        val nonPaged = request.name == "Featured" && page <= 1
+        val nonPaged = request.name == "Recommend" && page <= 1
         val req = if (nonPaged) {
-            app.get(request.data)
+            app.get("$apiUrl/")
         } else {
-            app.get("${url.first()}$page/?${url.lastOrNull()}")
+            app.get("$apiUrl/${url.first()}$page/?${url.lastOrNull()}")
         }
         mainUrl = getBaseUrl(req.url)
         val document = req.document
@@ -206,12 +207,12 @@ class IdlixProvider : MainAPI() {
                     "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
                 ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest")
             ).parsedSafe<ResponseHash>() ?: return@apmap
-            val metrix = AppUtils.parseJson<AesData>(json.embed_url).m
-            val password = createKey(json.key, metrix)
+            val metrix = parseJson<AesData>(json.embed_url).m
+            val password = generateKey(json.key, metrix)
             val decrypted = AesHelper.cryptoAESHandler(json.embed_url, password.toByteArray(), false)?.fixBloat() ?: return@apmap
 
             when {
-                !decrypted.contains("youtube") -> getUrl(decrypted, "$directUrl/", subtitleCallback, callback)
+                !decrypted.contains("youtube") -> loadExtractor(decrypted, "$directUrl/", subtitleCallback, callback)
                 else -> return@apmap
             }
         }
@@ -219,7 +220,7 @@ class IdlixProvider : MainAPI() {
         return true
     }
 
-    private fun createKey(r: String, m: String): String {
+    private fun generateKey(r: String, m: String): String {
         val rList = r.split("\\x").toTypedArray()
         var n = ""
         val decodedM = String(base64Decode(m.split("").reversed().joinToString("")).toCharArray())
@@ -233,64 +234,6 @@ class IdlixProvider : MainAPI() {
         return this.replace("\"", "").replace("\\", "")
     }
 
-    private suspend fun getUrl(
-        url: String,
-        referer: String?,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        val document = app.get(url, referer = referer).document
-        val hash = url.split("/").last().substringAfter("data=")
-
-        val m3uLink = app.post(
-            url = "https://jeniusplay.com/player/index.php?data=$hash&do=getVideo",
-            data = mapOf("hash" to hash, "r" to "$referer"),
-            referer = referer,
-            headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-        ).parsed<ResponseSource>().videoSource
-
-        M3u8Helper.generateM3u8(
-            this.name,
-            m3uLink,
-            "$referer",
-        ).forEach(callback)
-
-
-        document.select("script").map { script ->
-            if (script.data().contains("eval(function(p,a,c,k,e,d)")) {
-                val subData =
-                    getAndUnpack(script.data()).substringAfter("\"tracks\":[").substringBefore("],")
-                AppUtils.tryParseJson<List<Tracks>>("[$subData]")?.map { subtitle ->
-                    subtitleCallback.invoke(
-                        SubtitleFile(
-                            getLanguage(subtitle.label ?: ""),
-                            subtitle.file
-                        )
-                    )
-                }
-            }
-        }
-    }
-
-    private fun getLanguage(str: String): String {
-        return when {
-            str.contains("indonesia", true) || str
-                .contains("bahasa", true) -> "Indonesian"
-            else -> str
-        }
-    }
-
-    data class ResponseSource(
-        @JsonProperty("hls") val hls: Boolean,
-        @JsonProperty("videoSource") val videoSource: String,
-        @JsonProperty("securedLink") val securedLink: String?,
-    )
-
-    data class Tracks(
-        @JsonProperty("kind") val kind: String?,
-        @JsonProperty("file") val file: String,
-        @JsonProperty("label") val label: String?,
-    )
 
     data class ResponseHash(
         @JsonProperty("embed_url") val embed_url: String,

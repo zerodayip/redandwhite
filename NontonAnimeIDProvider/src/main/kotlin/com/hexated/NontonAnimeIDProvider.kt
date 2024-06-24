@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.Jsoup
@@ -13,7 +12,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 class NontonAnimeIDProvider : MainAPI() {
-    override var mainUrl = "https://nontonanimeid.org"
+    override var mainUrl = "https://nontonanimeid.baby"
     override var name = "NontonAnimeID"
     override val hasQuickSearch = false
     override val hasMainPage = true
@@ -187,29 +186,28 @@ class NontonAnimeIDProvider : MainAPI() {
 
         val document = app.get(data).document
 
-        val nonce =
-            document.select("script#ajax_video-js-extra").attr("src").substringAfter("base64,")
-                .let {
-                    AppUtils.parseJson<Map<String, String>>(base64Decode(it).substringAfter("="))["nonce"]
-                }
+        val nonce = document.select("script#ajax_video-js-extra").attr("src").substringAfter("base64,")
+            .let { Regex("nonce\":\"(\\S+?)\"").find(base64Decode(it))?.groupValues?.get(1) }
 
         document.select(".container1 > ul > li:not(.boxtab)").apmap {
             val dataPost = it.attr("data-post")
             val dataNume = it.attr("data-nume")
-            val dataType = it.attr("data-type")
+            val serverName = it.attr("data-type").lowercase()
 
             val iframe = app.post(
                 url = "$mainUrl/wp-admin/admin-ajax.php",
                 data = mapOf(
                     "action" to "player_ajax",
-                    "post" to dataPost,
+                    "nonce" to "$nonce",
+                    "serverName" to serverName,
                     "nume" to dataNume,
-                    "type" to dataType,
-                    "nonce" to "$nonce"
+                    "post" to dataPost,
                 ),
                 referer = data,
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-            ).document.selectFirst("iframe")?.attr("src")
+            ).document.selectFirst("iframe")?.attr("src")?.let {
+                if(it.contains("/video-frame/")) app.get(it).document.select("iframe").attr("data-src") else it
+            }
 
             loadExtractor(iframe ?: return@apmap, "$mainUrl/", subtitleCallback, callback)
         }

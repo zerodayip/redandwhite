@@ -9,7 +9,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class Animasu : MainAPI() {
-    override var mainUrl = "https://animasu.win"
+    override var mainUrl = "https://v5.animasu.cc"
     override var name = "Animasu"
     override val hasMainPage = true
     override var lang = "id"
@@ -138,7 +138,7 @@ class Animasu : MainAPI() {
         document.select(".mobius > .mirror > option").mapNotNull {
             fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src")) to it.text()
         }.apmap { (iframe, quality) ->
-            loadFixedExtractor(iframe.fixIframe(), quality, "$mainUrl/", subtitleCallback, callback)
+            loadFixedExtractor(iframe, quality, "$mainUrl/", subtitleCallback, callback)
         }
         return true
     }
@@ -163,14 +163,6 @@ class Animasu : MainAPI() {
                     link.extractorData
                 )
             )
-        }
-    }
-
-    private fun String.fixIframe() : String {
-        return if(this.startsWith("https://dl.berkasdrive.com")) {
-            base64Decode(this.substringAfter("id="))
-        } else {
-            this
         }
     }
 

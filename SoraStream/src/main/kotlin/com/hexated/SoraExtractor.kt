@@ -2007,7 +2007,7 @@ object SoraExtractor : SoraStream() {
             season,
             episode,
             callback,
-            BuildConfig.GHOSTX_API,
+            "https://gomovies-online.cam",
             "Ghostx",
             base64Decode("X3NtUWFtQlFzRVRi"),
             base64Decode("X3NCV2NxYlRCTWFU")
@@ -2479,7 +2479,6 @@ object SoraExtractor : SoraStream() {
             )
         }
 
-
     }
 
     suspend fun invokeSFMovies(
@@ -2493,7 +2492,7 @@ object SoraExtractor : SoraStream() {
         val headers =
             mapOf("Authorization" to "Bearer 44d784c55e9a1e3dbb586f24b18b1cbcd1521673bd6178ef385890d2f989681fe22d05e291e2e0f03fce99cbc50cd520219e52cc6e30c944a559daf53a129af18349ec98f6a0e4e66b8d370a354f4f7fbd49df0ab806d533a3db71eecc7f75131a59ce8cffc5e0cc38e8af5919c23c0d904fbe31995308f065f0ff9cd1eda488")
         val data = app.get(
-            "${BuildConfig.SFMOVIES_API}/api/mains?filters[title][\$contains]=$title",
+            "https://streamflix.website/api/mains?filters[title][\$contains]=$title",
             headers = headers
         ).parsedSafe<SFMoviesSearch>()?.data
         val media = data?.find {

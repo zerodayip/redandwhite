@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.APIHolder
 import com.lagradost.cloudstream3.SubtitleFile
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.Hxfile
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -83,4 +84,9 @@ class KotakAnimeidCom : Hxfile() {
     override val name = "KotakAnimeid"
     override val mainUrl = "https://kotakanimeid.com"
     override val requiresReferer = true
+}
+
+class Vidhidepre : Filesim() {
+    override val name = "Vidhidepre"
+    override var mainUrl = "https://vidhidepre.com"
 }

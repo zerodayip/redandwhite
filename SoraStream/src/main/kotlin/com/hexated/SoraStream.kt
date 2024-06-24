@@ -76,7 +76,7 @@ open class SoraStream : TmdbProvider() {
         const val malsyncAPI = "https://api.malsync.moe"
         const val jikanAPI = "https://api.jikan.moe/v4"
 
-        private const val apiKey = BuildConfig.TMDB_API
+        private const val apiKey = "b030404650f279792a8d3287232358e3"
 
         /** ALL SOURCES */
         const val twoEmbedAPI = "https://www.2embed.cc"
@@ -95,11 +95,11 @@ open class SoraStream : TmdbProvider() {
         const val flixonAPI = "https://flixon.lol"
         const val smashyStreamAPI = "https://embed.smashystream.com"
         const val watchSomuchAPI = "https://watchsomuch.tv" // sub only
-        const val cinemaTvAPI = BuildConfig.CINEMATV_API
+        const val cinemaTvAPI = "https://www.lookmovie2.to"
         const val nineTvAPI = "https://moviesapi.club"
         const val nowTvAPI = "https://myfilestorage.xyz"
         const val gokuAPI = "https://goku.sx"
-        const val zshowAPI = BuildConfig.ZSHOW_API
+        const val zshowAPI = "https://vip.idlixplus.co"
         const val ridomoviesAPI = "https://ridomovies.tv"
         const val emoviesAPI = "https://emovies.si"
         const val multimoviesAPI = "https://multimovies.top"

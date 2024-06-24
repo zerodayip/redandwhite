@@ -277,14 +277,14 @@ open class Superstream : MainAPI() {
     private val iv = base64Decode("d0VpcGhUbiE=")
     private val key = base64Decode("MTIzZDZjZWRmNjI2ZHk1NDIzM2FhMXc2")
 
-    private val firstAPI = BuildConfig.SUPERSTREAM_FIRST_API
+    private val firstAPI = base64Decode("aHR0cHM6Ly9zaG93Ym94LnNoZWd1Lm5ldC9hcGkvYXBpX2NsaWVudC9pbmRleC8=")
 
     // Another url because the first one sucks at searching
     // This one was revealed to me in a dream
-    private val secondAPI = BuildConfig.SUPERSTREAM_SECOND_API
+    private val secondAPI = base64Decode("aHR0cHM6Ly9tYnBhcGkuc2hlZ3UubmV0L2FwaS9hcGlfY2xpZW50L2luZGV4Lw==")
 
-    val thirdAPI = BuildConfig.SUPERSTREAM_THIRD_API
-    val fourthAPI = BuildConfig.SUPERSTREAM_FOURTH_API
+    val thirdAPI = base64Decode("aHR0cHM6Ly93d3cuZmViYm94LmNvbQ==")
+    val fourthAPI = base64Decode("aHR0cHM6Ly93d3cuc2hvd2JveC5tZWRpYQ==")
 
     val watchSomuchAPI = "https://watchsomuch.tv"
     val openSubAPI = "https://opensubtitles-v3.strem.io"
