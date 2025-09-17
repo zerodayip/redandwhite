@@ -27,12 +27,13 @@ class Pusatfilm : Gomov() {
                         val name = eps.attr("title")
                         val episode = "Episode\\s*(\\d+)".toRegex().find(name)?.groupValues?.get(1)
                         val season = "Season\\s*(\\d+)".toRegex().find(name)?.groupValues?.get(1)
-                        Episode(
+                        newEpisode(
                             href,
-                            name,
-                            season = season?.toIntOrNull(),
-                            episode = episode?.toIntOrNull(),
-                        )
+                        ) {
+                            this.name = name
+                            this.season = season?.toIntOrNull()
+                            this.episode = episode?.toIntOrNull()
+                        }
                     }.filter { it.episode != null }
                 }
             }

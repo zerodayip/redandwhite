@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -99,14 +100,17 @@ class OploverzProvider : MainAPI() {
 
         val title = document.selectFirst("h1.entry-title")?.text()
             ?.replace("Subtitle Indonesia", "")?.trim() ?: ""
-        val type = getType(document.selectFirst("div.info-content span:contains(Type:)")?.text()?.substringAfter(":")?.trim() ?: "TV")
+        val type = getType(
+            document.selectFirst("div.info-content span:contains(Type:)")?.text()
+                ?.substringAfter(":")?.trim() ?: "TV"
+        )
         val year =
             document.selectFirst("div.alternati a")?.text()?.filter { it.isDigit() }?.toIntOrNull()
         val episodes = document.select("div.eplister ul li").mapNotNull {
             val header = it.selectFirst("a") ?: return@mapNotNull null
             val episode = it.select("div.epl-num").text().toIntOrNull()
             val link = fixUrl(header.attr("href"))
-            Episode(link, episode = episode)
+            newEpisode(link) { this.episode = episode }
         }.reversed()
 
         val tracker = APIHolder.getTracker(listOf(title), TrackerType.getTypes(type), year, true)
@@ -140,7 +144,9 @@ class OploverzProvider : MainAPI() {
         argamap(
             {
                 document.select(".mobius > .mirror > option").apmap {
-                    val iframe = fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src"))
+                    val iframe = fixUrl(
+                        Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src")
+                    )
                     loadExtractor(fixUrl(iframe), "$mainUrl/", subtitleCallback, callback)
                 }
             },
@@ -170,18 +176,22 @@ class OploverzProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.name,
-                    link.name,
-                    link.url,
-                    link.referer,
-                    if(link.type == ExtractorLinkType.M3U8) link.quality else quality.fixQuality(),
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            runBlocking {
+                callback.invoke(
+                    newExtractorLink(
+                        link.name,
+                        link.name,
+                        link.url,
+                        link.type
+                    ) {
+                        this.referer = link.referer
+                        this.quality =
+                            if (link.type == ExtractorLinkType.M3U8) link.quality else quality.fixQuality()
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
                 )
-            )
+            }
         }
     }
 

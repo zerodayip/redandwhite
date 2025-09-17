@@ -152,7 +152,7 @@ class Loklok : MainAPI() {
                     it.subtitlingUrl
                 )
             }
-            Episode(
+            newEpisode(
                 data = UrlEpisode(
                     data.id.toString(),
                     data.category,
@@ -160,8 +160,9 @@ class Loklok : MainAPI() {
                     definition,
                     subtitling
                 ).toJson(),
-                episode = eps.seriesNo
-            )
+            ) {
+                this.episode = eps.seriesNo
+            }
         } ?: throw ErrorLoadingException("No Episode Found")
         val recommendations = res.likeList?.mapNotNull { rec ->
             rec.toSearchResponse()
@@ -234,14 +235,14 @@ class Loklok : MainAPI() {
                 headers = headers,
             ).parsedSafe<PreviewResponse>()?.data
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
                     json?.mediaUrl ?: return@apmap null,
-                    "",
-                    getQuality(json.currentDefinition ?: ""),
-                    isM3u8 = true,
-                )
+                    INFER_TYPE
+                ) {
+                    this.quality = getQuality(json.currentDefinition ?: "")
+                }
             )
         }
 

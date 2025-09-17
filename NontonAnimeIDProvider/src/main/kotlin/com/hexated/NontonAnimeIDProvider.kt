@@ -135,7 +135,7 @@ class NontonAnimeIDProvider : MainAPI() {
                     it.selectFirst("a")?.text().toString()
                 )?.groupValues?.getOrNull(0) ?: it.selectFirst("a")?.text()
                 val link = fixUrl(it.selectFirst("a")!!.attr("href"))
-                Episode(link, episode = episode?.toIntOrNull())
+                newEpisode(link) { this.episode = episode?.toIntOrNull() }
             }.reversed()
         } else {
             document.select("ul.misha_posts_wrap2 > li").map {
@@ -143,7 +143,7 @@ class NontonAnimeIDProvider : MainAPI() {
                     it.selectFirst("a")?.text().toString()
                 )?.groupValues?.getOrNull(0) ?: it.selectFirst("a")?.text()
                 val link = it.select("a").attr("href")
-                Episode(link, episode = episode?.toIntOrNull())
+                newEpisode(link) { this.episode = episode?.toIntOrNull() }
             }.reversed()
         }
 
@@ -186,8 +186,9 @@ class NontonAnimeIDProvider : MainAPI() {
 
         val document = app.get(data).document
 
-        val nonce = document.select("script#ajax_video-js-extra").attr("src").substringAfter("base64,")
-            .let { Regex("nonce\":\"(\\S+?)\"").find(base64Decode(it))?.groupValues?.get(1) }
+        val nonce =
+            document.select("script#ajax_video-js-extra").attr("src").substringAfter("base64,")
+                .let { Regex("nonce\":\"(\\S+?)\"").find(base64Decode(it))?.groupValues?.get(1) }
 
         document.select(".container1 > ul > li:not(.boxtab)").apmap {
             val dataPost = it.attr("data-post")
@@ -206,7 +207,8 @@ class NontonAnimeIDProvider : MainAPI() {
                 referer = data,
                 headers = mapOf("X-Requested-With" to "XMLHttpRequest")
             ).document.selectFirst("iframe")?.attr("src")?.let {
-                if(it.contains("/video-frame/")) app.get(it).document.select("iframe").attr("data-src") else it
+                if (it.contains("/video-frame/")) app.get(it).document.select("iframe")
+                    .attr("data-src") else it
             }
 
             loadExtractor(iframe ?: return@apmap, "$mainUrl/", subtitleCallback, callback)

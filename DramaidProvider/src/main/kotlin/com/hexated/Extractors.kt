@@ -8,9 +8,11 @@ import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.extractors.XStreamCdn
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class Gcam : ExtractorApi() {
     override val name = "Gcam"
@@ -30,13 +32,14 @@ open class Gcam : ExtractorApi() {
         json?.sources?.map {
             val quality = getQualityFromName(it.label)
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     "$name ${if(quality != Qualities.Unknown.value) "" else quality}",
                     it.file?: return@map,
-                    "",
-                    getQualityFromName(it.label)
-                )
+                    INFER_TYPE
+                ) {
+                    this.quality = getQualityFromName(it.label)
+                }
             )
         }
 

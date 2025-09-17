@@ -21,16 +21,18 @@ open class Qiwi : ExtractorApi() {
         val source = document.select("video source").attr("src")
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 source,
-                "$mainUrl/",
-                getIndexQuality(title),
-                headers = mapOf(
+                INFER_TYPE
+            ) {
+                this.referer = "$mainUrl/"
+                this.quality = getIndexQuality(title)
+                this.headers = mapOf(
                     "Range" to "bytes=0-",
                 )
-            )
+            }
         )
 
     }
@@ -57,18 +59,19 @@ open class Filedon : ExtractorApi() {
         val token = res.select("meta[name=csrf-token]").attr("content")
         val slug = url.substringAfterLast("/")
 
-        val video = app.post("$mainUrl/get-url", data = mapOf(
-            "_token" to token,
-            "slug" to slug,
-        ), referer = url).parsedSafe<Response>()?.data?.url
+        val video = app.post(
+            "$mainUrl/get-url", data = mapOf(
+                "_token" to token,
+                "slug" to slug,
+            ), referer = url
+        ).parsedSafe<Response>()?.data?.url
 
         callback.invoke(
-            ExtractorLink(
-                name,
-                name,
+            newExtractorLink(
+                this.name,
+                this.name,
                 video ?: return,
-                "",
-                Qualities.Unknown.value,
+                INFER_TYPE
             )
         )
 

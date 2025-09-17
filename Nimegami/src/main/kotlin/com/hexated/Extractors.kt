@@ -26,14 +26,14 @@ open class Mitedrive : ExtractorApi() {
         ).parsedSafe<Responses>()?.data?.url
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 video ?: return,
-                "$mainUrl/",
-                Qualities.Unknown.value,
                 INFER_TYPE,
-            )
+            ) {
+                this.referer = "$mainUrl/"
+            }
         )
 
     }
@@ -63,14 +63,14 @@ open class Berkasdrive : ExtractorApi() {
         val video = res.select("video#player source").attr("src")
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 video,
-                "$mainUrl/",
-                Qualities.Unknown.value,
                 INFER_TYPE
-            )
+            ) {
+                this.referer = "$mainUrl/"
+            }
         )
 
     }

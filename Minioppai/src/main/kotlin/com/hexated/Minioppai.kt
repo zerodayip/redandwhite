@@ -106,7 +106,7 @@ class Minioppai : MainAPI() {
         val episodes = document.select("div.epsdlist ul li").mapNotNull {
             val name = it.selectFirst("div.epl-num")?.text()
             val link = fixUrlNull(it.selectFirst("a")?.attr("href")) ?: return@mapNotNull null
-            Episode(link, name = name)
+            newEpisode(link) {this.name = name}
         }
 
         return newAnimeLoadResponse(title, url, TvType.NSFW) {

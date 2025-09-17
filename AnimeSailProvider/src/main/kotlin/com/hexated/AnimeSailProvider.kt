@@ -6,9 +6,12 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.mvvm.safeApiCall
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.nicehttp.NiceResponse
+import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -119,7 +122,7 @@ class AnimeSailProvider : MainAPI() {
             val name = it.select("a").text()
             val episode =
                 Regex("Episode\\s?(\\d+)").find(name)?.groupValues?.getOrNull(0)?.toIntOrNull()
-            Episode(link, episode = episode)
+            newEpisode(link) { this.episode = episode }
         }.reversed()
 
         val tracker = APIHolder.getTracker(listOf(title), TrackerType.getTypes(type), year, true)
@@ -163,20 +166,22 @@ class AnimeSailProvider : MainAPI() {
                         .let {
                             val link = Jsoup.parse(it).select("source").last()?.attr("src")
                             callback.invoke(
-                                ExtractorLink(
+                                newExtractorLink(
                                     source = this.name,
                                     name = this.name,
                                     url = link ?: return@let,
-                                    referer = mainUrl,
-                                    quality = quality
-                                )
+                                    INFER_TYPE
+                                ) {
+                                    this.referer = mainUrl
+                                    this.quality = quality
+                                }
                             )
                         }
 
                     iframe.startsWith("$mainUrl/utils/player/arch/") || iframe.startsWith("$mainUrl/utils/player/race/") || iframe.startsWith(
                         "$mainUrl/utils/player/hexupload/"
-                    ) || iframe.startsWith ("$mainUrl/utils/player/pomf/")
-                    -> request(iframe, ref = data).document.select("source").attr("src")
+                    ) || iframe.startsWith("$mainUrl/utils/player/pomf/")
+                        -> request(iframe, ref = data).document.select("source").attr("src")
                         .let { link ->
                             val source =
                                 when {
@@ -187,13 +192,15 @@ class AnimeSailProvider : MainAPI() {
                                     else -> this.name
                                 }
                             callback.invoke(
-                                ExtractorLink(
+                                newExtractorLink(
                                     source = source,
                                     name = source,
                                     url = link,
-                                    referer = mainUrl,
-                                    quality = quality
-                                )
+                                    INFER_TYPE
+                                ) {
+                                    this.referer = mainUrl
+                                    this.quality = quality
+                                }
                             )
                         }
 //                    skip for now
@@ -237,19 +244,23 @@ class AnimeSailProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.name,
-                    link.name,
-                    link.url,
-                    link.referer,
-                    if (link.type == ExtractorLinkType.M3U8) link.quality else quality
-                        ?: Qualities.Unknown.value,
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            runBlocking {
+                callback.invoke(
+                    newExtractorLink(
+                        source = link.name,
+                        name = link.name,
+                        url = link.url,
+                        INFER_TYPE
+                    ) {
+                        this.referer = mainUrl
+                        this.quality = if (link.type == ExtractorLinkType.M3U8) link.quality else quality
+                            ?: Qualities.Unknown.value
+                        this.type = link.type
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
                 )
-            )
+            }
         }
     }
 

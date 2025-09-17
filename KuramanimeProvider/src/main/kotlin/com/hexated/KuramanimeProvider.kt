@@ -4,8 +4,10 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -121,7 +123,7 @@ class KuramanimeProvider : MainAPI() {
                     val episode = Regex("(\\d+[.,]?\\d*)").find(name)?.groupValues?.getOrNull(0)
                         ?.toIntOrNull()
                     val link = it.attr("href")
-                    Episode(link, episode = episode)
+                    newEpisode(link) { this.episode = episode }
                 }
             if (eps.isEmpty()) break else episodes.addAll(eps)
         }
@@ -174,19 +176,20 @@ class KuramanimeProvider : MainAPI() {
             val link = fixUrl(it.attr("src"))
             val quality = it.attr("size").toIntOrNull()
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     fixTitle(server),
                     fixTitle(server),
                     link,
-                    referer = "",
-                    quality = quality ?: Qualities.Unknown.value,
-                    headers = mapOf(
+                    INFER_TYPE
+                ) {
+                    this.headers = mapOf(
                         "Accept" to "video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5",
                         "Range" to "bytes=0-",
                         "Sec-Fetch-Dest" to "video",
                         "Sec-Fetch-Mode" to "no-cors",
-                    ),
-                )
+                    )
+                    this.quality = quality ?: Qualities.Unknown.value
+                }
             )
         }
         if (server == "kuramadrive") {
@@ -208,7 +211,8 @@ class KuramanimeProvider : MainAPI() {
         cookies = req.cookies
 
         val token = res.selectFirst("meta[name=csrf-token]")?.attr("content") ?: return false
-        val dataKps = res.selectFirst("div.col-lg-12.mt-3")?.attributes()?.last()?.value ?: return false
+        val dataKps =
+            res.selectFirst("div.col-lg-12.mt-3")?.attributes()?.last()?.value ?: return false
 
         val assets = getAssets(dataKps)
 
@@ -220,7 +224,11 @@ class KuramanimeProvider : MainAPI() {
             "X-Requested-With" to "XMLHttpRequest",
         )
 
-        val tokenKey = app.get("$mainUrl/${assets.MIX_PREFIX_AUTH_ROUTE_PARAM}${assets.MIX_AUTH_ROUTE_PARAM}", headers = headers, cookies = cookies).text
+        val tokenKey = app.get(
+            "$mainUrl/${assets.MIX_PREFIX_AUTH_ROUTE_PARAM}${assets.MIX_AUTH_ROUTE_PARAM}",
+            headers = headers,
+            cookies = cookies
+        ).text
 
         headers = mapOf(
             "X-CSRF-TOKEN" to token,
@@ -229,7 +237,8 @@ class KuramanimeProvider : MainAPI() {
 
         res.select("select#changeServer option").apmap { source ->
             val server = source.attr("value")
-            val link = "$data?${assets.MIX_PAGE_TOKEN_KEY}=$tokenKey&${assets.MIX_STREAM_SERVER_KEY}=$server"
+            val link =
+                "$data?${assets.MIX_PAGE_TOKEN_KEY}=$tokenKey&${assets.MIX_STREAM_SERVER_KEY}=$server"
             if (server.contains(Regex("(?i)kuramadrive|archive"))) {
                 invokeLocalSource(link, server, headers, subtitleCallback, callback)
             } else {
@@ -250,13 +259,23 @@ class KuramanimeProvider : MainAPI() {
 
     private suspend fun getAssets(bpjs: String?): Assets {
         val env = app.get("$mainUrl/assets/js/$bpjs.js").text
-        val MIX_PREFIX_AUTH_ROUTE_PARAM = env.substringAfter("MIX_PREFIX_AUTH_ROUTE_PARAM: '").substringBefore("',")
-        val MIX_AUTH_ROUTE_PARAM = env.substringAfter("MIX_AUTH_ROUTE_PARAM: '").substringBefore("',")
+        val MIX_PREFIX_AUTH_ROUTE_PARAM =
+            env.substringAfter("MIX_PREFIX_AUTH_ROUTE_PARAM: '").substringBefore("',")
+        val MIX_AUTH_ROUTE_PARAM =
+            env.substringAfter("MIX_AUTH_ROUTE_PARAM: '").substringBefore("',")
         val MIX_AUTH_KEY = env.substringAfter("MIX_AUTH_KEY: '").substringBefore("',")
         val MIX_AUTH_TOKEN = env.substringAfter("MIX_AUTH_TOKEN: '").substringBefore("',")
         val MIX_PAGE_TOKEN_KEY = env.substringAfter("MIX_PAGE_TOKEN_KEY: '").substringBefore("',")
-        val MIX_STREAM_SERVER_KEY = env.substringAfter("MIX_STREAM_SERVER_KEY: '").substringBefore("',")
-        return Assets(MIX_PREFIX_AUTH_ROUTE_PARAM, MIX_AUTH_ROUTE_PARAM, MIX_AUTH_KEY, MIX_AUTH_TOKEN, MIX_PAGE_TOKEN_KEY, MIX_STREAM_SERVER_KEY)
+        val MIX_STREAM_SERVER_KEY =
+            env.substringAfter("MIX_STREAM_SERVER_KEY: '").substringBefore("',")
+        return Assets(
+            MIX_PREFIX_AUTH_ROUTE_PARAM,
+            MIX_AUTH_ROUTE_PARAM,
+            MIX_AUTH_KEY,
+            MIX_AUTH_TOKEN,
+            MIX_PAGE_TOKEN_KEY,
+            MIX_STREAM_SERVER_KEY
+        )
     }
 
     private fun randomId(length: Int = 6): String {

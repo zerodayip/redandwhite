@@ -81,7 +81,7 @@ class Paradisehill : MainAPI() {
                         .toList()
                 }
         val episodes = dataEps?.mapIndexed { index, link ->
-            Episode(link, episode = index + 1)
+            newEpisode(link) {this.episode = index + 1}
         } ?: throw ErrorLoadingException("No Episode Found")
 
         val recommendations =
@@ -109,14 +109,14 @@ class Paradisehill : MainAPI() {
     ): Boolean {
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 data.replace("\\", ""),
-                referer = mainUrl,
-                quality = Qualities.Unknown.value,
-//                headers = mapOf("Range" to "bytes=0-"),
-            )
+                INFER_TYPE
+            ) {
+                this.referer = mainUrl
+            }
         )
         return true
     }

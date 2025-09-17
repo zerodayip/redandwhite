@@ -122,11 +122,12 @@ open class RebahinProvider : MainAPI() {
             val episodes = app.get(baseLink).document.select("div#list-eps > a").map {
                 Pair(it.text(), it.attr("data-iframe"))
             }.groupBy { it.first }.map { eps ->
-                Episode(
+                newEpisode(
                     data = eps.value.map { fixUrl(base64Decode(it.second)) }.toString(),
-                    name = eps.key,
-                    episode = eps.key.filter { it.isDigit() }.toIntOrNull()
-                )
+                ) {
+                    this.name = eps.key
+                    this.episode = eps.key.filter { it.isDigit() }.toIntOrNull()
+                }
 
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {

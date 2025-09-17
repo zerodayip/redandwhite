@@ -15,7 +15,8 @@ class Hentaiheaven : MainAPI() {
     override val hasDownloadSupport = true
 
     override val supportedTypes = setOf(
-        TvType.NSFW)
+        TvType.NSFW
+    )
 
     override val mainPage = mainPageOf(
         "?m_orderby=new-manga" to "New",
@@ -74,7 +75,10 @@ class Hentaiheaven : MainAPI() {
             val name = it.selectFirst("a")?.text() ?: return@mapNotNull null
             val image = fixUrlNull(it.selectFirst("a img")?.attr("src"))
             val link = fixUrlNull(it.selectFirst("a")?.attr("href")) ?: return@mapNotNull null
-            Episode(link, name, posterUrl = image)
+            newEpisode(link) {
+                this.name = name
+                this.posterUrl = image
+            }
         }.reversed()
 
         val recommendations =
@@ -102,7 +106,9 @@ class Hentaiheaven : MainAPI() {
     ): Boolean {
 
         val doc = app.get(data).document
-        val meta = doc.selectFirst("meta[itemprop=thumbnailUrl]")?.attr("content")?.substringAfter("/hh/")?.substringBefore("/") ?: return false
+        val meta =
+            doc.selectFirst("meta[itemprop=thumbnailUrl]")?.attr("content")?.substringAfter("/hh/")
+                ?.substringBefore("/") ?: return false
         doc.select("div.player_logic_item iframe").attr("src").let { iframe ->
             val document = app.get(iframe, referer = data).text
             val en = Regex("var\\sen\\s=\\s'(\\S+)';").find(document)?.groupValues?.getOrNull(1)
@@ -116,30 +122,14 @@ class Hentaiheaven : MainAPI() {
 
             app.post(
                 "$mainUrl/wp-content/plugins/player-logic/api.php",
-//                data = mapOf(
-//                    "action" to "zarat_get_data_player_ajax",
-//                    "a" to "$en",
-//                    "b" to "$iv"
-//                ),
                 requestBody = body,
-//                headers = mapOf("Sec-Fetch-Mode" to "cors")
             ).parsedSafe<Response>()?.data?.sources?.map { res ->
-//                M3u8Helper.generateM3u8(
-//                    this.name,
-//                    res.src ?: return@map null,
-//                    referer = "$mainUrl/",
-//                    headers = mapOf(
-//                        "Origin" to mainUrl,
-//                    )
-//                ).forEach(callback)
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         this.name,
                         this.name,
                         res.src?.replace("/hh//", "/hh/$meta/") ?: return@map null,
-                        referer = "",
-                        quality = Qualities.Unknown.value,
-                        isM3u8 = true
+                        INFER_TYPE
                     )
                 )
             }

@@ -314,16 +314,15 @@ class StremioC : MainAPI() {
         ) {
             if (url != null) {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         name ?: "",
                         fixSourceName(name, title),
                         url,
-                        "",
-                        getQuality(listOf(description,title,name)),
-                        headers = behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers
-                        ?: mapOf(),
-                        type = INFER_TYPE
-                    )
+                        INFER_TYPE
+                    ) {
+                        this.quality = getQuality(listOf(description,title,name))
+                        this.headers = behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers ?: mapOf()
+                    }
                 )
                 subtitles.map { sub ->
                     subtitleCallback.invoke(
@@ -355,12 +354,10 @@ class StremioC : MainAPI() {
 
                 val magnet = "magnet:?xt=urn:btih:${infoHash}${sourceTrackers}${otherTrackers}"
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         name ?: "",
                         title ?: name ?: "",
                         magnet,
-                        "",
-                        Qualities.Unknown.value
                     )
                 )
             }

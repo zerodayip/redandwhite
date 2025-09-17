@@ -122,12 +122,11 @@ class LayarKacaProvider : MainAPI() {
                 val episode = it.text().toIntOrNull()
                 val season =
                         it.attr("href").substringAfter("season-").substringBefore("-").toIntOrNull()
-                Episode(
-                        href,
-                        "Episode $episode",
-                        season,
-                        episode,
-                )
+                newEpisode(href) {
+                    this.name = "Episode $episode"
+                    this.season = season
+                    this.episode = episode
+                }
             }.reversed()
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster

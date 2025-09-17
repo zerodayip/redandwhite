@@ -8,6 +8,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -67,12 +68,15 @@ class DramaSerial : MainAPI() {
         val tags =
             document.select("div.gmr-movie-innermeta a[rel=category tag]").map { it.text() }
         val year =
-            document.selectFirst("span[itemprop=dateCreated]")?.attr("content")?.substringBefore("-")?.toIntOrNull()
+            document.selectFirst("span[itemprop=dateCreated]")?.attr("content")
+                ?.substringBefore("-")?.toIntOrNull()
         val duration =
             document.selectFirst("div.gmr-movie-innermeta span:contains(Duration:)")?.text()
                 ?.filter { it.isDigit() }?.toIntOrNull()
         val description = document.select("div[itemprop=description]").text().trim()
-        val type = if (document.select("div.page-links").isNullOrEmpty()) TvType.Movie else TvType.AsianDrama
+        val type = if (document.select("div.page-links")
+                .isNullOrEmpty()
+        ) TvType.Movie else TvType.AsianDrama
 
         if (type == TvType.Movie) {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -91,10 +95,11 @@ class DramaSerial : MainAPI() {
                     } else {
                         eps.parent()?.attr("href")
                     }
-                    Episode(
-                        link ?: return@mapNotNull null,
-                        episode = episode,
-                    )
+                    newEpisode(
+                        link ?: return@mapNotNull null
+                    ) {
+                        this.episode = episode
+                    }
                 }
             return newTvSeriesLoadResponse(title, url, TvType.AsianDrama, episodes = episodes) {
                 posterUrl = poster
@@ -119,14 +124,15 @@ class DramaSerial : MainAPI() {
         val json = "sources:\\s*\\[(.*)]".toRegex().find(script)?.groupValues?.get(1)
         AppUtils.tryParseJson<ArrayList<Sources>>("[$json]")?.map {
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     name,
                     name,
                     it.file ?: return@map,
-                    "$serverUrl/",
-                    getQualityFromName(it.label),
-                    INFER_TYPE,
-                )
+                    INFER_TYPE
+                ) {
+                    this.referer = "$serverUrl/"
+                    this.quality = getQualityFromName(it.label)
+                }
             )
         }
 
@@ -148,14 +154,14 @@ class DramaSerial : MainAPI() {
         val token = req.document.selectFirst("div#token")?.text() ?: return
 
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 name,
                 name,
                 "$host/hlsplaylist.php?idhls=${token.trim()}.m3u8",
-                "$host/",
-                Qualities.Unknown.value,
-                true
-            )
+                INFER_TYPE
+            ) {
+                this.referer = "$host/"
+            }
         )
 
     }
@@ -184,9 +190,11 @@ class DramaSerial : MainAPI() {
                             callback
                         )
                     }
+
                     "gdrivehls", "gdriveplayer" -> {
                         invokeGdrive(serverName, iLink, callback)
                     }
+
                     else -> {}
                 }
             }

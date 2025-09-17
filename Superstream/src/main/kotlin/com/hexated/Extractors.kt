@@ -3,6 +3,7 @@ package com.hexated
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.runBlocking
 import java.net.URL
 
 object Extractors : Superstream() {
@@ -17,13 +18,16 @@ object Extractors : Superstream() {
     ) {
         fun LinkList.toExtractorLink(): ExtractorLink? {
             if (this.path.isNullOrBlank()) return null
-            return ExtractorLink(
-                "Internal",
-                "Internal [${this.size}]",
-                this.path.replace("\\/", ""),
-                "",
-                getQualityFromName(this.quality),
-            )
+            return runBlocking {
+                newExtractorLink(
+                    "Internal",
+                    "Internal [${this@toExtractorLink.size}]",
+                    this@toExtractorLink.path.replace("\\/", ""),
+                    INFER_TYPE
+                ) {
+                    quality = getQualityFromName(this@toExtractorLink.quality)
+                }
+            }
         }
 
         // No childmode when getting links
@@ -72,28 +76,35 @@ object Extractors : Superstream() {
             .parsedSafe<ExternalResponse>()?.data?.link?.substringAfterLast("/") ?: return
 
         val headers = mapOf("Accept-Language" to "en")
-        val shareRes = app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
-            .parsedSafe<ExternalResponse>()?.data ?: return
+        val shareRes =
+            app.get("$thirdAPI/file/file_share_list?share_key=$shareKey", headers = headers)
+                .parsedSafe<ExternalResponse>()?.data ?: return
 
         val fids = if (season == null) {
             shareRes.file_list
         } else {
-            val parentId = shareRes.file_list?.find { it.file_name.equals("season $season", true) }?.fid
-            app.get("$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1", headers = headers)
+            val parentId =
+                shareRes.file_list?.find { it.file_name.equals("season $season", true) }?.fid
+            app.get(
+                "$thirdAPI/file/file_share_list?share_key=$shareKey&parent_id=$parentId&page=1",
+                headers = headers
+            )
                 .parsedSafe<ExternalResponse>()?.data?.file_list?.filter {
                     it.file_name?.contains("s${seasonSlug}e${episodeSlug}", true) == true
                 }
         } ?: return
 
         fids.apmapIndexed { index, fileList ->
-            val player = app.get("$thirdAPI/file/player?fid=${fileList.fid}&share_key=$shareKey").text
+            val player =
+                app.get("$thirdAPI/file/player?fid=${fileList.fid}&share_key=$shareKey").text
             val sources = "sources\\s*=\\s*(.*);".toRegex().find(player)?.groupValues?.get(1)
             val qualities = "quality_list\\s*=\\s*(.*);".toRegex().find(player)?.groupValues?.get(1)
             listOf(sources, qualities).forEach {
                 AppUtils.tryParseJson<ArrayList<ExternalSources>>(it)?.forEach org@{ source ->
-                    val format = if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
+                    val format =
+                        if (source.type == "video/mp4") ExtractorLinkType.VIDEO else ExtractorLinkType.M3U8
                     val label = if (format == ExtractorLinkType.M3U8) "Hls" else "Mp4"
-                    if(!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
+                    if (!(source.label == "AUTO" || format == ExtractorLinkType.VIDEO)) return@org
                     callback.invoke(
                         ExtractorLink(
                             "External",
@@ -164,20 +175,21 @@ object Extractors : Superstream() {
         episode: Int? = null,
         subtitleCallback: (SubtitleFile) -> Unit,
     ) {
-        val slug = if(season == null) {
+        val slug = if (season == null) {
             "movie/$imdbId"
         } else {
             "series/$imdbId:$season:$episode"
         }
-        app.get("${openSubAPI}/subtitles/$slug.json", timeout = 120L).parsedSafe<OsResult>()?.subtitles?.map { sub ->
-            subtitleCallback.invoke(
-                SubtitleFile(
-                    SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
-                    ?: return@map,
-                    sub.url ?: return@map
+        app.get("${openSubAPI}/subtitles/$slug.json", timeout = 120L)
+            .parsedSafe<OsResult>()?.subtitles?.map { sub ->
+                subtitleCallback.invoke(
+                    SubtitleFile(
+                        SubtitleHelper.fromThreeLettersToLanguage(sub.lang ?: "") ?: sub.lang
+                        ?: return@map,
+                        sub.url ?: return@map
+                    )
                 )
-            )
-        }
+            }
     }
 
     suspend fun invokeVidsrcto(
@@ -192,7 +204,8 @@ object Extractors : Superstream() {
             "$vidsrctoAPI/embed/tv/$imdbId/$season/$episode"
         }
 
-        val mediaId = app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id") ?: return
+        val mediaId =
+            app.get(url).document.selectFirst("ul.episodes li a")?.attr("data-id") ?: return
         val subtitles = app.get("$vidsrctoAPI/ajax/embed/episode/$mediaId/subtitles").text
         AppUtils.tryParseJson<List<VidsrcSubtitles>>(subtitles)?.map {
             subtitleCallback.invoke(

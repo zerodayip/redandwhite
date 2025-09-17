@@ -17,8 +17,6 @@ class IdlixProvider : MainAPI() {
     override var name = "Idlix"
     override val hasMainPage = true
     override var lang = "id"
-    //    override var sequentialMainPage = true
-//    override var sequentialMainPageDelay = 1000L
     override val supportedTypes = setOf(
         TvType.Movie,
         TvType.TvSeries,
@@ -155,13 +153,13 @@ class IdlixProvider : MainAPI() {
                     .toIntOrNull()
                 val season = it.select("div.numerando").text().replace(" ", "").split("-").first()
                     .toIntOrNull()
-                Episode(
-                    href,
-                    name,
-                    season,
-                    episode,
-                    image
-                )
+
+                newEpisode(href) {
+                    this.name = name
+                    this.season = season
+                    this.episode = episode
+                    this.posterUrl = image
+                }
             }
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster

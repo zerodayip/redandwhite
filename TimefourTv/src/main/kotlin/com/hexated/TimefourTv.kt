@@ -4,7 +4,9 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.jsoup.nodes.Element
 import java.net.URI
 
@@ -17,7 +19,8 @@ class TimefourTv : MainAPI() {
         TvType.Live
     )
 
-    private val homePoster = "https://cdn.discordapp.com/attachments/1109266606292488297/1193060449193840681/Screenshot_2024-01-06_at_12-14-16_Logo_Maker_Used_By_2.3_Million_Startups.png?ex=65ebf0a1&is=65d97ba1&hm=aa4018534090d5dc69cf16a15ab4663d6f84a742d3f3b5ccad4be779c26517d7&"
+    private val homePoster =
+        "https://cdn.discordapp.com/attachments/1109266606292488297/1193060449193840681/Screenshot_2024-01-06_at_12-14-16_Logo_Maker_Used_By_2.3_Million_Startups.png?ex=65ebf0a1&is=65d97ba1&hm=aa4018534090d5dc69cf16a15ab4663d6f84a742d3f3b5ccad4be779c26517d7&"
     private val detailPoster =
         "https://cdn.discordapp.com/attachments/1109266606292488297/1193060448929595454/Screenshot_2024-01-06_at_12-13-02_Logo_Maker_Used_By_2.3_Million_Startups.png?ex=65ebf0a1&is=65d97ba1&hm=2dc35d2fcc09530f6d9fc963ecf6b9a28eeec1a7c76a083711379c7280dd34dc&"
 
@@ -44,13 +47,13 @@ class TimefourTv : MainAPI() {
             res?.forEach { tag ->
                 val header = tag.key
                 val channels = tag.value.mapNotNull {
-                    LiveSearchResponse(
+                    newLiveSearchResponse(
                         it.key,
                         Item(it.key, items = it.value.toJson()).toJson(),
-                        this@TimefourTv.name,
-                        TvType.Live,
-                        posterUrl = homePoster,
-                    )
+                        fix = false
+                    ) {
+                        posterUrl = homePoster
+                    }
                 }
                 if (channels.isNotEmpty()) items.add(HomePageList(header, channels, true))
             }
@@ -62,13 +65,13 @@ class TimefourTv : MainAPI() {
     private fun Element.toSearchResponse(): LiveSearchResponse {
         val title = this.select("strong").text()
         val href = fixUrl(this.select("a").attr("href"))
-        return LiveSearchResponse(
+        return newLiveSearchResponse(
             title,
             Item(title, href).toJson(),
-            this@TimefourTv.name,
-            TvType.Live,
-            posterUrl = homePoster,
-        )
+            fix = false
+        ) {
+            posterUrl = homePoster
+        }
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -82,16 +85,17 @@ class TimefourTv : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val data = AppUtils.parseJson<Item>(url)
         val episodes = if (data.items.isNullOrEmpty()) {
-            listOf(Episode(arrayListOf(Channels(data.title, data.url)).toJson()))
+            listOf(newEpisode(data = arrayListOf(Channels(data.title, data.url)).toJson()))
         } else {
             val items = AppUtils.parseJson<ArrayList<Items>>(data.items)
             items.mapNotNull { eps ->
-                Episode(
+                newEpisode(
                     data = eps.channels?.toJson() ?: return@mapNotNull null,
-                    name = "${eps.event} • ${eps.time}",
-                    description = eps.channels.map { it.channel_name }.joinToString(" • "),
-                    posterUrl = detailPoster,
-                )
+                ) {
+                    name = "${eps.event} • ${eps.time}"
+                    description = eps.channels.map { it.channel_name }.joinToString(" • ")
+                    posterUrl = detailPoster
+                }
             }
         }
         return newTvSeriesLoadResponse(
@@ -125,14 +129,14 @@ class TimefourTv : MainAPI() {
             val video = extractVideo(iframe)
 
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     it.channel_name ?: return@apmap,
                     video ?: return@apmap,
-                    "$host/",
-                    Qualities.Unknown.value,
-                    isM3u8 = true,
-                )
+                    INFER_TYPE
+                ) {
+                    referer = "$host/"
+                }
             )
         }
 

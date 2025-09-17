@@ -593,8 +593,8 @@ open class Superstream : MainAPI() {
                 url,
                 TvType.TvSeries,
                 episodes.mapNotNull {
-                    Episode(
-                        LinkData(
+                    newEpisode(
+                        data = LinkData(
                             it.tid ?: it.id ?: return@mapNotNull null,
                             ResponseTypes.Series.value,
                             it.season,
@@ -602,15 +602,16 @@ open class Superstream : MainAPI() {
                             data.id,
                             data.imdbId
                         ).toJson(),
-                        it.title,
-                        it.season,
-                        it.episode,
-                        it.thumbs ?: it.thumbsBak ?: it.thumbsMin ?: it.thumbsOriginal
-                        ?: it.thumbsOrg,
-                        it.imdbRating?.toDoubleOrNull()?.times(10)?.roundToInt(),
-                        it.synopsis,
-                        it.releasedTimestamp
-                    )
+                    ) {
+                        name = it.title
+                        season = it.season
+                        episode = it.episode
+                        posterUrl = it.thumbs ?: it.thumbsBak ?: it.thumbsMin ?: it.thumbsOriginal
+                        ?: it.thumbsOrg
+                        rating = it.imdbRating?.toDoubleOrNull()?.times(10)?.roundToInt()
+                        description = it.synopsis
+                        date = it.releasedTimestamp
+                    }
                 }
             ) {
                 this.year = data.year

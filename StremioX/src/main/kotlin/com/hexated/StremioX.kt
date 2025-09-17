@@ -22,9 +22,10 @@ class StremioX : TmdbProvider() {
     override val supportedTypes = setOf(TvType.Others)
 
     companion object {
-        const val TRACKER_LIST_URL = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
+        const val TRACKER_LIST_URL =
+            "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt"
         private const val tmdbAPI = "https://api.themoviedb.org/3"
-        private const val apiKey = BuildConfig.TMDB_API
+        private const val apiKey = "https://api.themoviedb.org/3"
 
         fun getType(t: String?): TvType {
             return when (t) {
@@ -143,19 +144,21 @@ class StremioX : TmdbProvider() {
             val episodes = res.seasons?.mapNotNull { season ->
                 app.get("$tmdbAPI/${data.type}/${data.id}/season/${season.seasonNumber}?api_key=$apiKey")
                     .parsedSafe<MediaDetailEpisodes>()?.episodes?.map { eps ->
-                        Episode(
-                            LoadData(
+                        newEpisode(
+                            data = LoadData(
                                 res.external_ids?.imdb_id,
                                 eps.seasonNumber,
                                 eps.episodeNumber
                             ).toJson(),
-                            name = eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else "",
-                            season = eps.seasonNumber,
-                            episode = eps.episodeNumber,
-                            posterUrl = getImageUrl(eps.stillPath),
-                            rating = eps.voteAverage?.times(10)?.roundToInt(),
-                            description = eps.overview
-                        ).apply {
+                        ) {
+                            this.name =
+                                eps.name + if (isUpcoming(eps.airDate)) " • [UPCOMING]" else ""
+                            this.season = eps.seasonNumber
+                            this.episode = eps.episodeNumber
+                            this.posterUrl = getImageUrl(eps.stillPath)
+                            this.rating = eps.voteAverage?.times(10)?.roundToInt()
+                            this.description = eps.overview
+                        }.apply {
                             this.addDate(eps.airDate)
                         }
                     }
@@ -167,7 +170,7 @@ class StremioX : TmdbProvider() {
                 this.backgroundPosterUrl = bgPoster
                 this.year = year
                 this.plot = res.overview
-                this.tags =  keywords.takeIf { !it.isNullOrEmpty() } ?: genres
+                this.tags = keywords.takeIf { !it.isNullOrEmpty() } ?: genres
                 this.rating = rating
                 this.showStatus = getStatus(res.status)
                 this.recommendations = recommendations
@@ -278,16 +281,17 @@ class StremioX : TmdbProvider() {
         ) {
             if (url != null) {
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         name ?: "",
                         fixSourceName(name, title),
                         url,
-                        "",
-                        getQuality(listOf(description,title,name)),
-                        headers = behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers
-                        ?: mapOf(),
-                        type = INFER_TYPE
-                    )
+                        INFER_TYPE
+                    ) {
+                        this.quality = getQuality(listOf(description, title, name))
+                        this.headers =
+                            behaviorHints?.proxyHeaders?.request ?: behaviorHints?.headers
+                                    ?: mapOf()
+                    }
                 )
                 subtitles.map { sub ->
                     subtitleCallback.invoke(
@@ -319,12 +323,10 @@ class StremioX : TmdbProvider() {
 
                 val magnet = "magnet:?xt=urn:btih:${infoHash}${sourceTrackers}${otherTrackers}"
                 callback.invoke(
-                    ExtractorLink(
+                    newExtractorLink(
                         name ?: "",
                         title ?: name ?: "",
-                        magnet,
-                        "",
-                        Qualities.Unknown.value
+                        magnet
                     )
                 )
             }

@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
@@ -81,10 +82,11 @@ class Nimegami : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val searchResponse = mutableListOf<SearchResponse>()
         for (i in 1..2) {
-            val res = app.get("$mainUrl/page/$i/?s=$query&post_type=post").document.select("div.archive article")
-                .mapNotNull {
-                    it.toSearchResult()
-                }
+            val res =
+                app.get("$mainUrl/page/$i/?s=$query&post_type=post").document.select("div.archive article")
+                    .mapNotNull {
+                        it.toSearchResult()
+                    }
             searchResponse.addAll(res)
         }
         return searchResponse
@@ -110,7 +112,7 @@ class Nimegami : MainAPI() {
                 val episode = Regex("Episode\\s?(\\d+)").find(it.text())?.groupValues?.getOrNull(0)
                     ?.toIntOrNull()
                 val link = it.attr("data")
-                Episode(link, episode = episode)
+                newEpisode(link) { this.episode = episode }
             }
 
         val recommendations = document.select("div#randomList > a").mapNotNull {
@@ -173,18 +175,21 @@ class Nimegami : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.name,
-                    link.name,
-                    link.url,
-                    link.referer,
-                    getQualityFromName(quality),
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            runBlocking {
+                callback.invoke(
+                    newExtractorLink(
+                        link.name,
+                        link.name,
+                        link.url,
+                        link.type
+                    ) {
+                        this.referer = link.referer
+                        this.quality = getQualityFromName(quality)
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
                 )
-            )
+            }
         }
     }
 

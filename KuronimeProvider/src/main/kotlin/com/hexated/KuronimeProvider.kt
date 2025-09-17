@@ -11,6 +11,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 import java.net.URI
 import java.util.ArrayList
@@ -132,8 +134,11 @@ class KuronimeProvider : MainAPI() {
         val poster = document.selectFirst("div.l[itemprop=image] > img")?.attr("data-src")
         val tags = document.select(".infodetail > ul > li:nth-child(2) > a").map { it.text() }
         val type =
-            getType(document.selectFirst(".infodetail > ul > li:nth-child(7)")?.ownText()?.removePrefix(":")
-                ?.lowercase()?.trim() ?: "tv")
+            getType(
+                document.selectFirst(".infodetail > ul > li:nth-child(7)")?.ownText()
+                    ?.removePrefix(":")
+                    ?.lowercase()?.trim() ?: "tv"
+            )
 
         val trailer = document.selectFirst("div.tply iframe")?.attr("data-src")
         val year = Regex("\\d, (\\d*)").find(
@@ -150,10 +155,10 @@ class KuronimeProvider : MainAPI() {
             val name = it.selectFirst("a")?.text() ?: return@mapNotNull null
             val episode =
                 Regex("(\\d+[.,]?\\d*)").find(name)?.groupValues?.getOrNull(0)?.toIntOrNull()
-            Episode(link, episode = episode)
+            newEpisode(link) { this.episode = episode }
         }.reversed()
 
-        val tracker = APIHolder.getTracker(listOf(title),TrackerType.getTypes(type),year,true)
+        val tracker = APIHolder.getTracker(listOf(title), TrackerType.getTypes(type), year, true)
 
         return newAnimeLoadResponse(title, url, type) {
             engName = title
@@ -242,18 +247,21 @@ class KuronimeProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         loadExtractor(url ?: return, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.name,
-                    link.name,
-                    link.url,
-                    link.referer,
-                    getQualityFromName(quality),
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            runBlocking {
+                callback.invoke(
+                    newExtractorLink(
+                        link.name,
+                        link.name,
+                        link.url,
+                        link.type,
+                    ) {
+                        this.referer = link.referer
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                        this.quality = getQualityFromName(quality)
+                    }
                 )
-            )
+            }
         }
     }
 

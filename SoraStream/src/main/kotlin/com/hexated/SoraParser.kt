@@ -4,22 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 
-data class CrunchyrollAccessToken(
-    val accessToken: String? = null,
-    val tokenType: String? = null,
-    val bucket: String? = null,
-    val policy: String? = null,
-    val signature: String? = null,
-    val key_pair_id: String? = null,
-)
-
-data class FDMovieIFrame(
-    val link: String,
-    val quality: String,
-    val size: String,
-    val type: String,
-)
-
 data class AniIds(var id: Int? = null, var idMal: Int? = null)
 
 data class TmdbDate(
@@ -27,42 +11,50 @@ data class TmdbDate(
     val nextWeek: String,
 )
 
-data class AniwaveResponse(
-    val result: String
+data class PrimeboxSources(
+    @JsonProperty("streams") val streams: HashMap<String, String>? = null,
+    @JsonProperty("subtitles") val subtitles: ArrayList<Subtitles>? = null,
 ) {
-    fun asJsoup(): Document {
-        return Jsoup.parse(result)
-    }
+    data class Subtitles(
+        @JsonProperty("file") val file: String? = null,
+        @JsonProperty("label") val label: String? = null,
+    )
 }
 
-data class AniwaveServer(
-    val result: Result
-) {
-    data class Result(
-        val url: String
-    ) {
-        fun decrypt(): String {
-            return AniwaveUtils.decodeVrf(url)
-        }
-    }
-}
+data class RageSources(
+    @JsonProperty("url") val url: String? = null,
+)
 
-data class MoflixResponse(
-    @JsonProperty("title") val title: Episode? = null,
-    @JsonProperty("episode") val episode: Episode? = null,
-) {
-    data class Episode(
-        @JsonProperty("id") val id: Int? = null,
-        @JsonProperty("videos") val videos: ArrayList<Videos>? = arrayListOf(),
-    ) {
-        data class Videos(
-            @JsonProperty("name") val name: String? = null,
-            @JsonProperty("category") val category: String? = null,
-            @JsonProperty("src") val src: String? = null,
-            @JsonProperty("quality") val quality: String? = null,
-        )
-    }
-}
+data class VidsrcccServer(
+    @JsonProperty("name") val name: String? = null,
+    @JsonProperty("hash") val hash: String? = null,
+)
+
+data class VidsrcccResponse(
+    @JsonProperty("data") val data: ArrayList<VidsrcccServer>? = arrayListOf(),
+)
+
+data class VidsrcccResult(
+    @JsonProperty("data") val data: VidsrcccSources? = null,
+)
+
+data class VidsrcccSources(
+    @JsonProperty("subtitles") val subtitles: ArrayList<VidsrcccSubtitles>? = arrayListOf(),
+    @JsonProperty("source") val source: String? = null,
+)
+
+data class VidsrcccSubtitles(
+    @JsonProperty("label") val label: String? = null,
+    @JsonProperty("file") val file: String? = null,
+)
+
+data class UpcloudSources(
+    @JsonProperty("file") val file: String? = null,
+)
+
+data class UpcloudResult(
+    @JsonProperty("sources") val sources: ArrayList<UpcloudSources>? = arrayListOf(),
+)
 
 data class AniMedia(
     @JsonProperty("id") var id: Int? = null,
@@ -82,58 +74,15 @@ data class GpressSources(
     @JsonProperty("max") val max: String,
 )
 
-data class UHDBackupUrl(
-    @JsonProperty("url") val url: String? = null,
-)
-
 data class ResponseHash(
     @JsonProperty("embed_url") val embed_url: String,
     @JsonProperty("key") val key: String? = null,
     @JsonProperty("type") val type: String? = null,
 )
 
-data class KisskhSources(
-    @JsonProperty("Video") val video: String?,
-    @JsonProperty("ThirdParty") val thirdParty: String?,
-)
-
-data class KisskhSubtitle(
-    @JsonProperty("src") val src: String?,
-    @JsonProperty("label") val label: String?,
-)
-
 data class KisskhEpisodes(
     @JsonProperty("id") val id: Int?,
     @JsonProperty("number") val number: Int?,
-)
-
-data class KisskhDetail(
-    @JsonProperty("episodes") val episodes: ArrayList<KisskhEpisodes>? = arrayListOf(),
-)
-
-data class KisskhResults(
-    @JsonProperty("id") val id: Int?,
-    @JsonProperty("title") val title: String?,
-)
-
-data class DriveBotLink(
-    @JsonProperty("url") val url: String? = null,
-)
-
-data class DirectDl(
-    @JsonProperty("download_url") val download_url: String? = null,
-)
-
-data class Safelink(
-    @JsonProperty("safelink") val safelink: String? = null,
-)
-
-data class FDAds(
-    @JsonProperty("linkr") val linkr: String? = null,
-)
-
-data class ZShowEmbed(
-    @JsonProperty("m") val meta: String? = null,
 )
 
 data class WatchsomuchTorrents(
@@ -147,13 +96,13 @@ data class WatchsomuchMovies(
     @JsonProperty("torrents") val torrents: ArrayList<WatchsomuchTorrents>? = arrayListOf(),
 )
 
-data class WatchsomuchResponses(
-    @JsonProperty("movie") val movie: WatchsomuchMovies? = null,
-)
-
 data class WatchsomuchSubtitles(
     @JsonProperty("url") val url: String? = null,
     @JsonProperty("label") val label: String? = null,
+)
+
+data class WatchsomuchResponses(
+    @JsonProperty("movie") val movie: WatchsomuchMovies? = null,
 )
 
 data class WatchsomuchSubResponses(
@@ -187,27 +136,10 @@ data class JikanData(
     @JsonProperty("external") val external: ArrayList<JikanExternal>? = arrayListOf(),
 )
 
-data class JikanResponse(
-    @JsonProperty("data") val data: JikanData? = null,
-)
-
 data class VidsrctoResult(
     @JsonProperty("id") val id: String? = null,
     @JsonProperty("title") val title: String? = null,
     @JsonProperty("url") val url: String? = null,
-)
-
-data class VidsrctoResponse(
-    @JsonProperty("result") val result: VidsrctoResult? = null,
-)
-
-data class VidsrctoSources(
-    @JsonProperty("result") val result: ArrayList<VidsrctoResult>? = arrayListOf(),
-)
-
-data class VidsrctoSubtitles(
-    @JsonProperty("label") val label: String? = null,
-    @JsonProperty("file") val file: String? = null,
 )
 
 data class AnilistExternalLinks(
@@ -220,50 +152,6 @@ data class AnilistExternalLinks(
 data class AnilistMedia(@JsonProperty("externalLinks") var externalLinks: ArrayList<AnilistExternalLinks> = arrayListOf())
 
 data class AnilistData(@JsonProperty("Media") var Media: AnilistMedia? = AnilistMedia())
-
-data class AnilistResponses(@JsonProperty("data") var data: AnilistData? = AnilistData())
-
-data class CrunchyrollToken(
-    @JsonProperty("access_token") val accessToken: String? = null,
-    @JsonProperty("token_type") val tokenType: String? = null,
-    @JsonProperty("cms") val cms: Cms? = null,
-) {
-    data class Cms(
-        @JsonProperty("bucket") var bucket: String? = null,
-        @JsonProperty("policy") var policy: String? = null,
-        @JsonProperty("signature") var signature: String? = null,
-        @JsonProperty("key_pair_id") var key_pair_id: String? = null,
-    )
-}
-
-data class CrunchyrollVersions(
-    @JsonProperty("audio_locale") val audio_locale: String? = null,
-    @JsonProperty("guid") val guid: String? = null,
-)
-
-data class CrunchyrollData(
-    @JsonProperty("id") val id: String? = null,
-    @JsonProperty("title") val title: String? = null,
-    @JsonProperty("slug_title") val slug_title: String? = null,
-    @JsonProperty("season_number") val season_number: Int? = null,
-    @JsonProperty("episode_number") val episode_number: Int? = null,
-    @JsonProperty("versions") val versions: ArrayList<CrunchyrollVersions>? = null,
-    @JsonProperty("streams_link") val streams_link: String? = null,
-)
-
-data class CrunchyrollResponses(
-    @JsonProperty("data") val data: ArrayList<CrunchyrollData>? = arrayListOf(),
-)
-
-data class CrunchyrollSourcesResponses(
-    @JsonProperty("streams") val streams: Streams? = Streams(),
-    @JsonProperty("subtitles") val subtitles: HashMap<String, HashMap<String, String>>? = hashMapOf(),
-) {
-    data class Streams(
-        @JsonProperty("adaptive_hls") val adaptive_hls: HashMap<String, HashMap<String, String>>? = hashMapOf(),
-        @JsonProperty("vo_adaptive_hls") val vo_adaptive_hls: HashMap<String, HashMap<String, String>>? = hashMapOf(),
-    )
-}
 
 data class MALSyncSites(
     @JsonProperty("Zoro") val zoro: HashMap<String?, HashMap<String, String?>>? = hashMapOf(),

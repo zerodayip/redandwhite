@@ -89,10 +89,7 @@ open class DramaidProvider : MainAPI() {
         val episodes = document.select(".eplister > ul > li").mapNotNull {
             val name = it.selectFirst("a > .epl-title")?.text()
             val link = fixUrl(it.selectFirst("a")?.attr("href") ?: return@mapNotNull null)
-            Episode(
-                link,
-                name,
-            )
+            newEpisode(link) { this.name = name }
         }.reversed()
 
         val recommendations =

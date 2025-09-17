@@ -7,6 +7,8 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import kotlinx.coroutines.runBlocking
 import org.jsoup.nodes.Element
 
 class Samehadaku : MainAPI() {
@@ -124,7 +126,7 @@ class Samehadaku : MainAPI() {
             val episode = Regex("Episode\\s?(\\d+)").find(header.text())?.groupValues?.getOrNull(1)
                 ?.toIntOrNull()
             val link = fixUrl(header.attr("href"))
-            Episode(link, episode = episode)
+            newEpisode(link) {this.episode = episode}
         }.reversed()
 
         val recommendations = document.select("aside#sidebar ul li").mapNotNull {
@@ -183,18 +185,21 @@ class Samehadaku : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.name,
-                    link.name,
-                    link.url,
-                    link.referer,
-                    name.fixQuality(),
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            runBlocking {
+                callback.invoke(
+                    newExtractorLink(
+                        link.name,
+                        link.name,
+                        link.url,
+                        link.type
+                    ) {
+                        this.referer = link.referer
+                        this.quality = name.fixQuality()
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
                 )
-            )
+            }
         }
     }
 
