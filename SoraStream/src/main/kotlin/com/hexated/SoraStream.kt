@@ -283,15 +283,6 @@ open class SoraStream : TmdbProvider() {
 
         runAllAsync(
             {
-                invokeGomovies(
-                    res.title,
-                    res.year,
-                    res.season,
-                    res.episode,
-                    callback
-                )
-            },
-            {
                 invokeIdlix(
                     res.title,
                     res.year,
