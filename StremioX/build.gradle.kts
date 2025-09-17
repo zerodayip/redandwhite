@@ -3,18 +3,6 @@ import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
 version = 13
 
-android {
-    buildFeatures {
-        buildConfig = true
-    }
-    defaultConfig {
-        val properties = Properties()
-        properties.load(project.rootProject.file("local.properties").inputStream())
-
-        buildConfigField("String", "TMDB_API", "\"${properties.getProperty("TMDB_API")}\"")
-    }
-}
-
 cloudstream {
     language = "en"
     // All of these properties are optional, you can safely remove them
