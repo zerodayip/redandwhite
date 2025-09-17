@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
 version = 229
 
+android.buildFeatures.buildConfig=true
+
 android {
     defaultConfig {
         val properties = Properties()
