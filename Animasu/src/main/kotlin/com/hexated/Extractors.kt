@@ -11,6 +11,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.INFER_TYPE
 import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class Archivd : ExtractorApi() {
     override val name: String = "Archivd"
@@ -27,14 +28,14 @@ class Archivd : ExtractorApi() {
         val json = res.select("div#app").attr("data-page")
         val video = AppUtils.tryParseJson<Sources>(json)?.props?.datas?.data?.link?.media
         callback.invoke(
-            ExtractorLink(
+            newExtractorLink(
                 this.name,
                 this.name,
                 video ?: return,
-                "$mainUrl/",
-                Qualities.Unknown.value,
                 INFER_TYPE
-            )
+            ) {
+                this.referer = "$mainUrl/"
+            }
         )
     }
 
@@ -76,18 +77,19 @@ class Newuservideo : ExtractorApi() {
 
         AppUtils.tryParseJson<Sources>(json)?.streams?.map {
             callback.invoke(
-                ExtractorLink(
+                newExtractorLink(
                     this.name,
                     this.name,
                     it.playUrl ?: return@map,
-                    "$mainUrl/",
-                    when (it.formatId) {
+                    INFER_TYPE
+                ) {
+                    this.referer = "$mainUrl/"
+                    this.quality = when (it.formatId) {
                         18 -> Qualities.P360.value
                         22 -> Qualities.P720.value
                         else -> Qualities.Unknown.value
-                    },
-                    INFER_TYPE
-                )
+                    }
+                }
             )
         }
 

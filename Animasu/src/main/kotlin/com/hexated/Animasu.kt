@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
+import kotlinx.coroutines.runBlocking
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -23,7 +24,7 @@ class Animasu : MainAPI() {
 
     companion object {
         fun getType(t: String?): TvType {
-            if(t == null) return TvType.Anime
+            if (t == null) return TvType.Anime
             return when {
                 t.contains("Tv", true) -> TvType.Anime
                 t.contains("Movie", true) -> TvType.AnimeMovie
@@ -33,7 +34,7 @@ class Animasu : MainAPI() {
         }
 
         fun getStatus(t: String?): ShowStatus {
-            if(t == null) return ShowStatus.Completed
+            if (t == null) return ShowStatus.Completed
             return when {
                 t.contains("Sedang Tayang", true) -> ShowStatus.Ongoing
                 else -> ShowStatus.Completed
@@ -97,22 +98,26 @@ class Animasu : MainAPI() {
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
 
-        val title = document.selectFirst("div.infox h1")?.text().toString().replace("Sub Indo", "").trim()
+        val title =
+            document.selectFirst("div.infox h1")?.text().toString().replace("Sub Indo", "").trim()
         val poster = document.selectFirst("div.bigcontent img")?.getImageAttr()
 
         val table = document.selectFirst("div.infox div.spe")
         val type = getType(table?.selectFirst("span:contains(Jenis:)")?.ownText())
-        val year = table?.selectFirst("span:contains(Rilis:)")?.ownText()?.substringAfterLast(",")?.trim()?.toIntOrNull()
+        val year =
+            table?.selectFirst("span:contains(Rilis:)")?.ownText()?.substringAfterLast(",")?.trim()
+                ?.toIntOrNull()
         val status = table?.selectFirst("span:contains(Status:) font")?.text()
         val trailer = document.selectFirst("div.trailer iframe")?.attr("src")
         val episodes = document.select("ul#daftarepisode > li").map {
             val link = fixUrl(it.selectFirst("a")!!.attr("href"))
             val name = it.selectFirst("a")?.text() ?: ""
-            val episode = Regex("Episode\\s?(\\d+)").find(name)?.groupValues?.getOrNull(0)?.toIntOrNull()
-            Episode(link, episode = episode)
+            val episode =
+                Regex("Episode\\s?(\\d+)").find(name)?.groupValues?.getOrNull(0)?.toIntOrNull()
+            newEpisode(link) { this.episode = episode }
         }.reversed()
 
-        val tracker = APIHolder.getTracker(listOf(title),TrackerType.getTypes(type),year,true)
+        val tracker = APIHolder.getTracker(listOf(title), TrackerType.getTypes(type), year, true)
 
         return newAnimeLoadResponse(title, url, type) {
             posterUrl = tracker?.image ?: poster
@@ -136,7 +141,9 @@ class Animasu : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         document.select(".mobius > .mirror > option").mapNotNull {
-            fixUrl(Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src")) to it.text()
+            fixUrl(
+                Jsoup.parse(base64Decode(it.attr("value"))).select("iframe").attr("src")
+            ) to it.text()
         }.apmap { (iframe, quality) ->
             loadFixedExtractor(iframe, quality, "$mainUrl/", subtitleCallback, callback)
         }
@@ -151,18 +158,23 @@ class Animasu : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         loadExtractor(url, referer, subtitleCallback) { link ->
-            callback.invoke(
-                ExtractorLink(
-                    link.name,
-                    link.name,
-                    link.url,
-                    link.referer,
-                    if(link.type == ExtractorLinkType.M3U8 || link.name == "Uservideo") link.quality else getIndexQuality(quality),
-                    link.type,
-                    link.headers,
-                    link.extractorData
+            runBlocking {
+                callback.invoke(
+                    newExtractorLink(
+                        link.name,
+                        link.name,
+                        link.url,
+                        link.type
+                    ) {
+                        this.referer = link.referer
+                        this.quality = if (link.type == ExtractorLinkType.M3U8 || link.name == "Uservideo") link.quality else getIndexQuality(
+                                quality
+                            )
+                        this.headers = link.headers
+                        this.extractorData = link.extractorData
+                    }
                 )
-            )
+            }
         }
     }
 
