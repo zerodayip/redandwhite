@@ -3,9 +3,10 @@ import org.jetbrains.kotlin.konan.properties.Properties
 // use an integer for version numbers
 version = 13
 
-android.buildFeatures.buildConfig=true
-
 android {
+    buildFeatures {
+        buildConfig = true
+    }
     defaultConfig {
         val properties = Properties()
         properties.load(project.rootProject.file("local.properties").inputStream())
