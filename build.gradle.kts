@@ -42,6 +42,7 @@ subprojects {
     }
 
     android {
+        namespace = "com.hexated"
         defaultConfig {
             minSdk = 21
             compileSdkVersion(35)
