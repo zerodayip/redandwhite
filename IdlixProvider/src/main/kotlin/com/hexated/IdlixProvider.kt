@@ -11,7 +11,7 @@ import org.jsoup.nodes.Element
 import java.net.URI
 
 class IdlixProvider : MainAPI() {
-    private val apiUrl = "https://idlixian.com"
+    private val apiUrl = "https://tv8.idlixku.com"
     override val instantLinkLoading = true
     private var directUrl = mainUrl
     override var name = "Idlix"
@@ -194,24 +194,35 @@ class IdlixProvider : MainAPI() {
 
         val document = app.get(data).document
         document.select("ul#playeroptionsul > li").map {
-            Triple(
-                it.attr("data-post"),
-                it.attr("data-nume"),
-                it.attr("data-type")
-            )
-        }.apmap { (id, nume, type) ->
+                Triple(
+                    it.attr("data-post"),
+                    it.attr("data-nume"),
+                    it.attr("data-type")
+                )
+            }.amap { (id, nume, type) ->
             val json = app.post(
-                url = "$directUrl/wp-admin/admin-ajax.php", data = mapOf(
+                url = "$directUrl/wp-admin/admin-ajax.php",
+                data = mapOf(
                     "action" to "doo_player_ajax", "post" to id, "nume" to nume, "type" to type
-                ), referer = data, headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest")
-            ).parsedSafe<ResponseHash>() ?: return@apmap
+                ),
+                referer = data,
+                headers = mapOf("Accept" to "*/*", "X-Requested-With" to "XMLHttpRequest")
+            ).parsedSafe<ResponseHash>() ?: return@amap
             val metrix = parseJson<AesData>(json.embed_url).m
             val password = generateKey(json.key, metrix)
-            val decrypted = AesHelper.cryptoAESHandler(json.embed_url, password.toByteArray(), false)?.fixBloat() ?: return@apmap
+            val decrypted =
+                AesHelper.cryptoAESHandler(json.embed_url, password.toByteArray(), false)
+                    ?.fixBloat() ?: return@amap
 
             when {
-                !decrypted.contains("youtube") -> loadExtractor(decrypted, "$directUrl/", subtitleCallback, callback)
-                else -> return@apmap
+                !decrypted.contains("youtube") -> IdlixPlayer().getUrl(
+                    decrypted,
+                    "$directUrl/",
+                    subtitleCallback,
+                    callback
+                )
+
+                else -> return@amap
             }
         }
 
@@ -221,11 +232,20 @@ class IdlixProvider : MainAPI() {
     private fun generateKey(r: String, m: String): String {
         val rList = r.split("\\x").toTypedArray()
         var n = ""
-        val decodedM = String(base64Decode(m.split("").reversed().joinToString("")).toCharArray())
+        val decodedM = safeBase64Decode(m.reversed())
         for (s in decodedM.split("|")) {
             n += "\\x" + rList[Integer.parseInt(s) + 1]
         }
         return n
+    }
+
+    private fun safeBase64Decode(input: String): String {
+        var paddedInput = input
+        val remainder = input.length % 4
+        if (remainder != 0) {
+            paddedInput += "=".repeat(4 - remainder)
+        }
+        return base64Decode(paddedInput)
     }
 
     private fun String.fixBloat(): String {

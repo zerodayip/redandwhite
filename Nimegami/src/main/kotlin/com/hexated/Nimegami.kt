@@ -112,7 +112,7 @@ class Nimegami : MainAPI() {
                 val episode = Regex("Episode\\s?(\\d+)").find(it.text())?.groupValues?.getOrNull(0)
                     ?.toIntOrNull()
                 val link = it.attr("data")
-                newEpisode(link) { this.episode = episode }
+                newEpisode(url = link, initializer = { this.episode = episode }, fix = false)
             }
 
         val recommendations = document.select("div#randomList > a").mapNotNull {
@@ -153,7 +153,7 @@ class Nimegami : MainAPI() {
     ): Boolean {
 
         tryParseJson<ArrayList<Sources>>(base64Decode(data))?.map { sources ->
-            sources.url?.apmap { url ->
+            sources.url?.amap { url ->
                 loadFixedExtractor(
                     url,
                     sources.format,
