@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 40
+version = 1
 
 
 cloudstream {
@@ -19,9 +19,9 @@ cloudstream {
     status = 1 // will be 3 if unspecified
     tvTypes = listOf(
         "AnimeMovie",
-        "Anime",
         "OVA",
+        "Anime",
     )
 
-    iconUrl = "https://www.google.com/s2/favicons?domain=kuramanime.com&sz=%size%"
+    iconUrl = "https://zoronime.com/wp-content/themes/zoronime/favicon.png?v=0.06"
 }
