@@ -3,10 +3,8 @@ package com.hexated
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addAniListId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addMalId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
 import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.runBlocking
-import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 class Zoronime : MainAPI() {
@@ -176,14 +174,5 @@ class Zoronime : MainAPI() {
             }
         }
     }
-
-    private fun Elements.getContent(css: String): Elements {
-        return this.select("tr:contains($css) td:last-child")
-    }
-
-    data class Sources(
-        @JsonProperty("format") val format: String? = null,
-        @JsonProperty("url") val url: ArrayList<String>? = arrayListOf(),
-    )
 
 }
