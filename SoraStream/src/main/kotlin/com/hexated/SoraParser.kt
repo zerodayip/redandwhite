@@ -11,6 +11,19 @@ data class TmdbDate(
     val nextWeek: String,
 )
 
+data class MappleSubtitle(
+    @JsonProperty("display") val display: String? = null,
+    @JsonProperty("url") val url: String? = null,
+)
+
+data class MappleSources(
+    @JsonProperty("data") val data: Data? = null,
+) {
+    data class Data(
+        @JsonProperty("stream_url") val stream_url: String? = null,
+    )
+}
+
 data class PrimeboxSources(
     @JsonProperty("streams") val streams: HashMap<String, String>? = null,
     @JsonProperty("subtitles") val subtitles: ArrayList<Subtitles>? = null,

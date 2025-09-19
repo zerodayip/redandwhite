@@ -6,9 +6,12 @@ import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.extractors.helper.AesHelper
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
+import com.lagradost.nicehttp.RequestBodyTypes
 import com.lagradost.nicehttp.Requests
 import com.lagradost.nicehttp.Session
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
 
 val session = Session(Requests().baseClient)
@@ -399,39 +402,39 @@ object SoraExtractor : SoraStream() {
                     }
                 )
             },
-            {
-                val url = if (season == null) {
-                    "$xprimeAPI/${servers.last()}?name=$title&fallback_year=$year"
-                } else {
-                    "$xprimeAPI/${servers.last()}?name=$title&fallback_year=$year&season=$season&episode=$episode"
-                }
-
-                val sources = app.get(url).parsedSafe<PrimeboxSources>()
-
-                sources?.streams?.map { source ->
-                    callback.invoke(
-                        newExtractorLink(
-                            serverName.last(),
-                            serverName.last(),
-                            source.value,
-                            ExtractorLinkType.M3U8
-                        ) {
-                            this.referer = referer
-                            this.quality = getQualityFromName(source.key)
-                        }
-                    )
-                }
-
-                sources?.subtitles?.map { subtitle ->
-                    subtitleCallback.invoke(
-                        SubtitleFile(
-                            subtitle.label ?: "",
-                            subtitle.file ?: return@map
-                        )
-                    )
-                }
-
-            }
+//            {
+//                val url = if (season == null) {
+//                    "$xprimeAPI/${servers.last()}?name=$title&fallback_year=$year"
+//                } else {
+//                    "$xprimeAPI/${servers.last()}?name=$title&fallback_year=$year&season=$season&episode=$episode"
+//                }
+//
+//                val sources = app.get(url).parsedSafe<PrimeboxSources>()
+//
+//                sources?.streams?.map { source ->
+//                    callback.invoke(
+//                        newExtractorLink(
+//                            serverName.last(),
+//                            serverName.last(),
+//                            source.value,
+//                            ExtractorLinkType.M3U8
+//                        ) {
+//                            this.referer = referer
+//                            this.quality = getQualityFromName(source.key)
+//                        }
+//                    )
+//                }
+//
+//                sources?.subtitles?.map { subtitle ->
+//                    subtitleCallback.invoke(
+//                        SubtitleFile(
+//                            subtitle.label ?: "",
+//                            subtitle.file ?: return@map
+//                        )
+//                    )
+//                }
+//
+//            }
         )
     }
 
@@ -474,6 +477,67 @@ object SoraExtractor : SoraStream() {
             )
         }
 
+
+    }
+
+    suspend fun invokeMapple(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val mediaType = if (season == null) "movie" else "tv"
+        val url = if (season == null) {
+            "$mappleAPI/watch/$mediaType/$tmdbId"
+        } else {
+            "$mappleAPI/watch/$mediaType/$season-$episode/$tmdbId"
+        }
+
+        val data = if (season == null) {
+            """[{"mediaId":$tmdbId,"mediaType":"$mediaType","tv_slug":"","source":"mapple"}]"""
+        } else {
+            """[{"mediaId":$tmdbId,"mediaType":"$mediaType","tv_slug":"$season-$episode","source":"mapple"}]"""
+        }
+
+        val headers = mapOf(
+            "Next-Action" to "40b6aee60efbf1ae586fc60e3bf69babebf2ceae2c",
+        )
+
+        val res = app.post(
+            url,
+            requestBody = data.toRequestBody(RequestBodyTypes.TEXT.toMediaTypeOrNull()),
+            headers = headers
+        ).text
+        val videoLink =
+            tryParseJson<MappleSources>(res.substringAfter("1:").trim())?.data?.stream_url
+
+        callback.invoke(
+            newExtractorLink(
+                "Mapple",
+                "Mapple",
+                videoLink ?: return,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = "$mappleAPI/"
+                this.headers = mapOf(
+                    "Accept" to "*/*"
+                )
+            }
+        )
+
+        val subRes = app.get(
+            "$mappleAPI/api/subtitles?id=$tmdbId&mediaType=$mediaType${if (season == null) "" else "&season=1&episode=1"}",
+            referer = "$mappleAPI/"
+        ).text
+        tryParseJson<ArrayList<MappleSubtitle>>(subRes)?.map { subtitle ->
+            subtitleCallback.invoke(
+                SubtitleFile(
+                    subtitle.display ?: "",
+                    fixUrl(subtitle.url ?: return@map, mappleAPI)
+                )
+            )
+        }
 
     }
 
