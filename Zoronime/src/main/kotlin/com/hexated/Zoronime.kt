@@ -103,11 +103,11 @@ class Zoronime : MainAPI() {
             listOf(newEpisode(url))
         } else {
             val button = document.select("div.film-buttons a").attr("href")
-            app.get(button).document.select("div#episodes-page-1 a").mapNotNull {
-                val episode = it.attr("id").toIntOrNull()
-                val link = it.attr("href")
+            app.get(button).document.select("div#episodes-page-1 a").mapIndexedNotNull { index, element ->
+                val episode = element.attr("id").toIntOrNull() ?: (index + 1)
+                val link = element.attr("href")
                 newEpisode(url = link, initializer = { this.episode = episode }, fix = false)
-            }
+            }.reversed()
         }
 
         val recommendations = document.select("div.film_list-wrap div.flw-item").mapNotNull {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.hexated.SoraExtractor.invokeGomovies
 import com.hexated.SoraExtractor.invokeIdlix
 import com.hexated.SoraExtractor.invokeMapple
+import com.hexated.SoraExtractor.invokeVidlink
 import com.hexated.SoraExtractor.invokeVidsrc
 import com.hexated.SoraExtractor.invokeVidsrccc
 import com.hexated.SoraExtractor.invokeWatchsomuch
@@ -52,6 +53,7 @@ open class SoraStream : TmdbProvider() {
         const val xprimeAPI = "https://backend.xprime.tv"
         const val watchSomuchAPI = "https://watchsomuch.tv"
         const val mappleAPI = "https://mapple.uk"
+        const val vidlinkAPI = "https://vidlink.pro"
 
         fun getType(t: String?): TvType {
             return when (t) {
@@ -330,6 +332,9 @@ open class SoraStream : TmdbProvider() {
             },
             {
                 invokeMapple(res.id, res.season, res.episode, subtitleCallback, callback)
+            },
+            {
+                invokeVidlink(res.id, res.season, res.episode, callback)
             }
         )
 

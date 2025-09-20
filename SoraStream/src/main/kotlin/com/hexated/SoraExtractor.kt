@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.APIHolder.capitalize
 import com.lagradost.cloudstream3.APIHolder.unixTimeMS
 import com.lagradost.cloudstream3.extractors.helper.AesHelper
+import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.nicehttp.RequestBodyTypes
@@ -538,6 +539,36 @@ object SoraExtractor : SoraStream() {
                 )
             )
         }
+
+    }
+
+    suspend fun invokeVidlink(
+        tmdbId: Int?,
+        season: Int?,
+        episode: Int?,
+        callback: (ExtractorLink) -> Unit,
+    ) {
+        val type = if(season == null) "movie" else "tv"
+        val url = if(season == null) {
+            "$vidlinkAPI/$type/$tmdbId"
+        } else {
+            "$vidlinkAPI/$type/$tmdbId/$season/$episode"
+        }
+
+        val videoLink = app.get(url, interceptor = WebViewResolver(
+            Regex("""$vidlinkAPI/api/b/$type/A{32}"""), timeout = 10_000L)
+        ).parsedSafe<VidlinkSources>()?.stream?.playlist
+
+        callback.invoke(
+            newExtractorLink(
+                "Vidlink",
+                "Vidlink",
+                videoLink ?: return,
+                ExtractorLinkType.M3U8
+            ) {
+                this.referer = "$vidlinkAPI/"
+            }
+        )
 
     }
 

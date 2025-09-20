@@ -11,6 +11,14 @@ data class TmdbDate(
     val nextWeek: String,
 )
 
+data class VidlinkSources(
+    @JsonProperty("stream") val stream: Stream? = null,
+) {
+    data class Stream(
+        @JsonProperty("playlist") val playlist: String? = null,
+    )
+}
+
 data class MappleSubtitle(
     @JsonProperty("display") val display: String? = null,
     @JsonProperty("url") val url: String? = null,
