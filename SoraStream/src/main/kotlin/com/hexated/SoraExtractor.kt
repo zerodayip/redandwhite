@@ -209,10 +209,16 @@ object SoraExtractor : SoraStream() {
                     else -> it.embed_url
                 }
             } ?: return@amap
-            if(source.startsWith("https://jeniusplay.com")) {
-                Jeniusplay2().getUrl(source, "$referer/", subtitleCallback, callback)
-            } else {
-                loadExtractor(source, "$referer/", subtitleCallback, callback)
+            when {
+                source.startsWith("https://jeniusplay.com") -> {
+                    Jeniusplay2().getUrl(source, "$referer/", subtitleCallback, callback)
+                }
+                !source.contains("youtube") -> {
+                    loadExtractor(source, "$referer/", subtitleCallback, callback)
+                }
+                else -> {
+                    return@amap
+                }
             }
 
         }
@@ -556,7 +562,7 @@ object SoraExtractor : SoraStream() {
         }
 
         val videoLink = app.get(url, interceptor = WebViewResolver(
-            Regex("""$vidlinkAPI/api/b/$type/A{32}"""), timeout = 10_000L)
+            Regex("""$vidlinkAPI/api/b/$type/A{32}"""), timeout = 15_000L)
         ).parsedSafe<VidlinkSources>()?.stream?.playlist
 
         callback.invoke(

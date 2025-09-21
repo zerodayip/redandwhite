@@ -3,14 +3,13 @@ package com.hexated
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.extractors.Filesim
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
 class LayarKacaProvider : MainAPI() {
 
-    override var mainUrl = "https://tv3.lk21official.mom"
-    private var seriesUrl = "https://tv13.nontondrama.click"
+    override var mainUrl = "https://tv.lk21official.love"
+    private var seriesUrl = "https://tv1.nontondrama.my"
 
     override var name = "LayarKaca"
     override val hasMainPage = true
