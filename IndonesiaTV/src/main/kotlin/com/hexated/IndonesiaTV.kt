@@ -13,6 +13,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 class IndonesiaTV : MainAPI() {
     override var mainUrl = "https://raw.githubusercontent.com/Sofie99/Resources/refs/heads/main/iptv.json"
     override var name = "IndonesiaTV"
+    override var lang = "id"
     override val hasDownloadSupport = false
     override val hasMainPage = true
     override val supportedTypes = setOf(
@@ -39,7 +40,7 @@ class IndonesiaTV : MainAPI() {
             }
         } ?: throw ErrorLoadingException()
 
-        return newHomePageResponse(listOf(HomePageList(request.name, home, true)), false)
+        return newHomePageResponse(HomePageList(request.name, home, true), false)
     }
 
     override suspend fun load(url: String): LoadResponse {

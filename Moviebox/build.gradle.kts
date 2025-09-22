@@ -1,13 +1,13 @@
 // use an integer for version numbers
-version = 2
+version = 1
 
 
 cloudstream {
-    language = "id"
+    language = "en"
     // All of these properties are optional, you can safely remove them
 
-    description = "Live Stream"
-    authors = listOf("Hexated")
+    // description = "Lorem Ipsum"
+     authors = listOf("Hexated")
 
     /**
      * Status int as the following:
@@ -18,8 +18,11 @@ cloudstream {
      * */
     status = 1 // will be 3 if unspecified
     tvTypes = listOf(
-        "Live",
+        "TvSeries",
+        "Movie",
+        "Anime",
+        "AsianDrama",
     )
 
-    iconUrl = "https://i.pinimg.com/736x/cc/27/87/cc27877a05d2d0a5727c838435f90c01.jpg"
+    iconUrl = "https://h5-static.aoneroom.com/oneroomStatic/public/_nuxt/web-logo.apJjVir2.svg"
 }
