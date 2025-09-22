@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 1
+version = 2
 
 
 cloudstream {
@@ -24,5 +24,5 @@ cloudstream {
         "AsianDrama",
     )
 
-    iconUrl = "https://h5-static.aoneroom.com/oneroomStatic/public/_nuxt/web-logo.apJjVir2.svg"
+    iconUrl = "https://moviebox.ph/favicon.ico"
 }

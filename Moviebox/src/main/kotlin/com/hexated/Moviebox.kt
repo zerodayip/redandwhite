@@ -159,7 +159,7 @@ class Moviebox : MainAPI() {
             referer = referer
         ).parsedSafe<Media>()?.data?.streams
 
-        streams?.map { source ->
+        streams?.reversed()?.distinctBy { it.url }?.map { source ->
             callback.invoke(
                 newExtractorLink(
                     this.name,
