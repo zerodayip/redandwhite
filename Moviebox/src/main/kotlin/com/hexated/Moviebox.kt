@@ -3,14 +3,12 @@ package com.hexated
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.providers.SoraStream.Companion.mappleAPI
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.nicehttp.RequestBodyTypes
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.net.URI
 
 class Moviebox : MainAPI() {
     override var mainUrl = "https://moviebox.ph"
@@ -101,12 +99,21 @@ class Moviebox : MainAPI() {
 
         return if (tvType == TvType.TvSeries) {
             val episode = document?.resource?.seasons?.map { seasons ->
-                (1..seasons.maxEp!!).map { episode ->
-                    newEpisode(LoadData(id, seasons.se, episode, subject?.detailPath).toJson()) {
-                        this.season = seasons.se
-                        this.episode = episode
+                (if (seasons.allEp.isNullOrEmpty()) (1..seasons.maxEp!!) else seasons.allEp.split(",")
+                    .map { it.toInt() })
+                    .map { episode ->
+                        newEpisode(
+                            LoadData(
+                                id,
+                                seasons.se,
+                                episode,
+                                subject?.detailPath
+                            ).toJson()
+                        ) {
+                            this.season = seasons.se
+                            this.episode = episode
+                        }
                     }
-                }
             }?.flatten() ?: emptyList()
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episode) {
                 this.posterUrl = poster
@@ -147,7 +154,8 @@ class Moviebox : MainAPI() {
         val media = parseJson<LoadData>(data)
         val referer = "$apiUrl/spa/videoPlayPage/movies/${media.detailPath}?id=${media.id}&type=/movie/detail&lang=en"
 
-        val streams = app.get("$apiUrl/wefeed-h5-bff/web/subject/play?subjectId=${media.id}&se=${media.season ?: 0}&ep=${media.episode ?: 0}",
+        val streams = app.get(
+            "$apiUrl/wefeed-h5-bff/web/subject/play?subjectId=${media.id}&se=${media.season ?: 0}&ep=${media.episode ?: 0}",
             referer = referer
         ).parsedSafe<Media>()?.data?.streams
 
@@ -234,6 +242,7 @@ class Moviebox : MainAPI() {
                 data class Seasons(
                     @JsonProperty("se") val se: Int? = null,
                     @JsonProperty("maxEp") val maxEp: Int? = null,
+                    @JsonProperty("allEp") val allEp: String? = null,
                 )
             }
         }
