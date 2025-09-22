@@ -128,9 +128,9 @@ class Moviebox : MainAPI() {
         } else {
             newMovieLoadResponse(
                 title,
-                LoadData(id, detailPath = subject?.detailPath).toJson(),
+                url,
                 TvType.Movie,
-                url
+                LoadData(id, detailPath = subject?.detailPath).toJson()
             ) {
                 this.posterUrl = poster
                 this.year = year
