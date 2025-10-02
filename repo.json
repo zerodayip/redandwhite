@@ -1,0 +1,8 @@
+{
+    "name": "ZeroDayIp repository",
+    "description": "ZeroDayIp",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/zerodayip/redandwhite/refs/heads/builds/plugins.json"
+    ]
+}
